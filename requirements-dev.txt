@@ -1,0 +1,5 @@
+black
+flake8
+twine
+pytest==5.4.*
+
