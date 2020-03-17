@@ -330,7 +330,7 @@ def setup_logging():
         "Time shift to apply to the photo Date Time Original EXIF tag "
         "to match the date in GPX (see documentation for format). Use if there is a "
         "drift in the camera compared to the GPS recorder or if an offset "
-        "is not present in the EXIF."
+        "is not present in the EXIF. (default: no shift)"
     ),
     required=False,
 )
@@ -339,8 +339,8 @@ def setup_logging():
     "--tolerance",
     "tolerance",
     help=(
-        "Tolerance if time of photo is not inside the time range of the GPX track "
-        "(default: 10s)."
+        "Tolerance if time of photo is not inside the time range of the GPX track. "
+        "(default: 10s)"
     ),
     required=False,
     default="10s",

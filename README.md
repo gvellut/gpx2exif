@@ -36,6 +36,22 @@ There is no standard time zone tag in EXIF. Some cameras will set the Offset Tim
 
 For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta` switch must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the time shift must be set to *minus* 1 hour.
 
+## Format for time shift and tolerance
+
+The time shift (`--delta` switch) and tolerance (`--tolerance` switch) are time intervals. They can be expressed using a string in a simple format. For example:
+
+```
+1h23m54s
+```
+
+It is possible to specify only seconds (s) or minutes (m) or hours (h) or any combination but the order (h then m then s) must be kept. No space is allowed.
+
+The time shift can also be negative. For example:
+
+```
+-23m
+```
+
 # Options
 
 To get some help about the arguments to the command, just launch with the --help option:
@@ -48,10 +64,10 @@ Options:
                         EXIF tag to match the date in GPX (see documentation
                         for format). Use if there is a drift in the camera
                         compared to the GPS recorder or if an offset is not
-                        present in the EXIF.
+                        present in the EXIF. (default: no shift)
 
   -t, --tolerance TEXT  Tolerance if time of photo is not inside the time
-                        range of the GPX track (default: 10s).
+                        range of the GPX track. (default: 10s)
 
   -o, --ignore-offset   Flag to indicate that the OffsetTimeOriginal should
                         not be used (time of images is assumed UTC). Use
@@ -75,7 +91,7 @@ The following command will synch the location data found in the GPX file with a 
 gpx2exif geopaparazzi_20200315_183754.gpx dsc004239.jpg --delta 2m25s
 ```
 
-After running this command, the photo will be updated with the location of the closest GPX track point.
+After running this command, the photo will be updated with the location of the GPX track point that is the closest in time.
 
 ### Folder
 
