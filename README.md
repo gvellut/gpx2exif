@@ -4,7 +4,7 @@ Simple command-line tool to add GPS info from a GPX file to EXIF tags in images
 
 # Motivation
 
-I use Geopaparazzi on my Android phone to log GPS positions during a walk or hike. The app can export into GPX format, which gives the itinerary, as well as the times for my positions at a relatively high temporal resolution. This is useful for making maps or writing a guide after the fact. I also wanted to make it easier to know the location of the photos taken during the walk and have them show up on the Flickr map. Since my camera doesn't have any GPS logging equipment, I made this tool in order to add the GPS information to the photo EXIF tags based on the GPX tracking points.
+I use [Geopaparazzi](https://www.osgeo.org/projects/geopaparazzi/) on my Android phone to log GPS positions during a walk or hike. The app can export into GPX format, which gives the itinerary, as well as the times for my positions at a relatively high temporal resolution. This is useful for making maps or writing a guide after the fact. I also wanted to make it easier to know the location of the photos taken during the walk and have them show up on the Flickr map. Since my camera doesn't have any GPS logging equipment, I made this tool in order to add the GPS information to the photo EXIF tags based on the GPX tracking points.
 
 # Install
 
@@ -18,19 +18,23 @@ pip install gpx2exif
 
 The command above will install the `gpx2exif` Python library and its dependencies. The library includes a command-line script, also named `gpx2exif`, whose functionality is described below.
 
-# Time in images
+# Time
 
-## Time tag
+## Time EXIF tag in images
 
-The time used for the images is taken from the Date Time Original EXIF tag in the image. In Adobe Bridge, it can be shifted as needed in the UI.
+The time used for an image is taken from the Date Time Original EXIF metadata tag. In Adobe Bridge, it can be shifted as needed in the UI.
 
-In the tool, this time is first shifted using the value for the `--delta` switch if present. This switch can be used to correct for the time drift in the camera relative to the GPS logger or correct the time zone (see below). The goal is to align the times in the images with the times in the GPX. The corrected image time is then used to extract a Lat / Lon position from the GPX file (which is essentially a mapping from time to position), which is then added to the EXIF metadata of the image.
+##  Correspondence between time in images and GPX
+
+In the tool, the time in an image is first shifted using the value for the `--delta` switch if present. This switch can be used to correct for the time drift in the camera relative to the GPS logger or correct the time zone (see below). The goal is to align the times in the images with the times in the GPX. The corrected image time is then used to extract a Lat / Lon position from the GPX file (which is essentially a mapping from time to position), which is then added to the EXIF metadata of the image.
+
+There is no switch to shift the time for the GPX file like there is for images: The GPX is assumed to be the reference.
 
 ## Time zone
 
-There is no standard time zone tag in EXIF. Some cameras will set the Offset Time Original tag to a time shift (something like "+02:00"), which, by default, is read by the tool in order to set a zone. If this tag is not present, the zone of the times in the images is assumed to be UTC. In that case, if the times in the images are actually in local time, the `--delta` switch must be used to compensate. The `--ignore-offset` switch can also be used to make the tool ignore the Offset Time Original tag even if present (for instance, if it is wrong).
+There is no standard time zone tag in EXIF. Some cameras will set the Offset Time Original tag to a time shift (something like "+02:00"), which, by default, is read by the tool in order to set a zone. If this tag is not present, the zone of the times in the images is assumed to be UTC ("+00:00"). In that case, if the times in the images are actually in local time, the `--delta` switch must be used to compensate. The `--ignore-offset` switch can also be used to make the tool ignore the Offset Time Original tag even if present (for instance, if it is wrong).
 
-For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta` switch must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the delta must be *minus* 1 hour.
+For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta` switch must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the time shift must be set to *minus* 1 hour.
 
 # Options
 
