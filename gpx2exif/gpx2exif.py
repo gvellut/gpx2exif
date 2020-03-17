@@ -183,7 +183,8 @@ def parse_timedelta(time_str):
     help=(
         "Time shift to apply to the photo Date Time Original EXIF tag "
         "to match the date in GPX (see documentation for format). Use if there is a "
-        "drift in the camera or if timezone is not UTC"
+        "drift in the camera compared to the GPS recorder or if a timezone offset "
+        "is not set in the EXIF"
     ),
     required=False,
 )
@@ -191,7 +192,10 @@ def parse_timedelta(time_str):
     "-t",
     "--tolerance",
     "tolerance",
-    help="Tolerance if time of photo is not inside the time bounds of a GPX segment",
+    help=(
+        "Tolerance if time of photo is not inside the time bounds of a GPX segment "
+        "(default: 10s)"
+    ),
     required=False,
     default="10s",
 )
