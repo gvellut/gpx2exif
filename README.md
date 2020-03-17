@@ -24,13 +24,15 @@ The command above will install the `gpx2exif` Python library and its dependencie
 
 The time used for the images is taken from the Date Time Original EXIF tag in the image. In Adobe Bridge, it can be shifted as needed in the UI if needed.
 
+If needed, this time is shifted using the value for the `--delta` switch. It is then used to extract a Lat / Lon position in the GPX file (which is essentially a mapping time => position).
+
 ## Time zone
 
 There is no standard time zone tag in EXIF. Some cameras will set the Offset Time Original tag to a time shift (something like "+02:00"), which, by default, is read by the tool in order to set a zone. If this tag is not present, the zone of the times in the images is assumed to be UTC. In that case, if the times in the images are actually in local time, the `--delta` switch must be used to compensate. The `--ignore-offset` switch can also be used to make the tool ignore the Offset Time Original tag even if present (for instance, if it is wrong).
 
 For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta` switch must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the delta must be *minus* 1 hour.
 
-## Options
+# Options
 
 To get some help about the arguments to the command, just launch with the --help option:
 
@@ -59,7 +61,7 @@ Options:
   --help                Show this message and exit.
 ```
 
-## Examples
+# Examples
 
 ### Basic usage
 
