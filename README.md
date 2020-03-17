@@ -22,9 +22,9 @@ The command above will install the `gpx2exif` Python library and its dependencie
 
 ## Time tag
 
-The time used for the images is taken from the Date Time Original EXIF tag in the image. In Adobe Bridge, it can be shifted as needed in the UI if needed.
+The time used for the images is taken from the Date Time Original EXIF tag in the image. In Adobe Bridge, it can be shifted as needed in the UI.
 
-If needed, this time is shifted using the value for the `--delta` switch. It is then used to extract a Lat / Lon position in the GPX file (which is essentially a mapping time => position).
+In the tool, this time is first shifted using the value for the `--delta` switch if present. This switch can be used to correct for the time drift in the camera relative to the GPS logger or correct the time zone (see below). The goal is to align the times in the images with the times in the GPX. The corrected image time is then used to extract a Lat / Lon position from the GPX file (which is essentially a mapping from time to position), which is then added to the EXIF metadata of the image.
 
 ## Time zone
 
