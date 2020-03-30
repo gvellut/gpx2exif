@@ -57,6 +57,7 @@ The time shift can also be negative. For example:
 To get some help about the arguments to the command, just launch with the --help option:
 
 ```
+~$ gpx2exif --help
 Usage: gpx2exif [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
 
 Options:

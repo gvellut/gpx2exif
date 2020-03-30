@@ -13,7 +13,7 @@ import pandas as pd
 import piexif
 from termcolor import colored
 
-DEBUG = True
+DEBUG = False
 
 logger = logging.getLogger(__package__)
 
@@ -107,7 +107,7 @@ def compute_pos(img_time, gpx_segments, tolerance):
                 # before first
                 dt = df.index[0].tz_convert("utc") - img_time.tz_convert("utc")
                 if dt < tolerance:
-                    # consider the last row as the value
+                    # consider the first row as the value
                     gps = df.iloc[0]
                     return gps["lat"], gps["lon"]
                 else:
@@ -294,7 +294,7 @@ class ColorFormatter(logging.Formatter):
                 color_begin=LOG_COLORS[record.levelno],
                 color_end=colorama.Style.RESET_ALL,
             )
-        return super(ColorFormatter, self).format(record, *args, **kwargs)
+        return super().format(record, *args, **kwargs)
 
 
 def setup_logging():
