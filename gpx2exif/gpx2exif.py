@@ -99,47 +99,41 @@ def compute_pos(img_time, gpx_segments, tolerance):
         if img_time in df.index:
             gps = df.loc[img_time]
             return gps["lat"], gps["lon"]
-        else:
-            # searchsorted returns the index for insertion to keep the
-            # series sorted with the arg value inserted
-            index = df.index.searchsorted(img_time)
-            if index == 0:
-                # before first
-                dt = df.index[0].tz_convert("utc") - img_time.tz_convert("utc")
-                if dt < tolerance:
-                    # consider the first row as the value
-                    gps = df.iloc[0]
-                    return gps["lat"], gps["lon"]
-                else:
-                    # no suitable point in GPX found
-                    return None
-            elif index == len(df):
-                # after last
-                dt = img_time.tz_convert("utc") - df.index[-1].tz_convert("utc")
-                if dt < tolerance:
-                    # consider the last row as the value
-                    # TODO search the next segment to see if closer ?
-                    gps = df.iloc[-1]
-                    return gps["lat"], gps["lon"]
-                else:
-                    # search next segment
-                    continue
+
+        # searchsorted returns the index for insertion to keep the
+        # series sorted with the arg value inserted
+        index = df.index.searchsorted(img_time)
+        if index == 0:
+            # before first
+            dt = df.index[0].tz_convert("utc") - img_time.tz_convert("utc")
+            if dt < tolerance:
+                # consider the first row as the value
+                gps = df.iloc[0]
+                return gps["lat"], gps["lon"]
             else:
-                gps_before = df.iloc[index - 1]
-                gps_after = df.iloc[index]
-                gpx_gap = gps_after.name - gps_before.name
-                img_gap = img_time.tz_convert("utc") - gps_before.name.tz_convert("utc")
-                gap_ratio = img_gap / gpx_gap
-                # linear interp
-                lat = (
-                    gps_before["lat"]
-                    + (gps_after["lat"] - gps_before["lat"]) * gap_ratio
-                )
-                lon = (
-                    gps_before["lon"]
-                    + (gps_after["lon"] - gps_before["lon"]) * gap_ratio
-                )
-                return lat, lon
+                # no suitable point in GPX found
+                return None
+        elif index == len(df):
+            # after last
+            dt = img_time.tz_convert("utc") - df.index[-1].tz_convert("utc")
+            if dt < tolerance:
+                # consider the last row as the value
+                # TODO search the next segment to see if closer ?
+                gps = df.iloc[-1]
+                return gps["lat"], gps["lon"]
+            else:
+                # search next segment
+                continue
+        else:
+            gps_before = df.iloc[index - 1]
+            gps_after = df.iloc[index]
+            gpx_gap = gps_after.name - gps_before.name
+            img_gap = img_time.tz_convert("utc") - gps_before.name.tz_convert("utc")
+            gap_ratio = img_gap / gpx_gap
+            # linear interp
+            lat = gps_before["lat"] + (gps_after["lat"] - gps_before["lat"]) * gap_ratio
+            lon = gps_before["lon"] + (gps_after["lon"] - gps_before["lon"]) * gap_ratio
+            return lat, lon
 
     return None
 
