@@ -252,13 +252,13 @@ def read_gpx(gpx_filepath):
 
 def parse_timedelta(time_str):
     regex = re.compile(
-        r"(?P<negative>-)?(?:(?P<hours>\d+?)hr)?"
+        r"(?P<negative>-)?(?:(?P<hours>\d+?)h)?"
         r"(?:(?P<minutes>\d+?)m)?(?:(?P<seconds>\d+?)s)?"
     )
     parts = regex.match(time_str)
 
-    if not parts:
-        raise ValueError(f"{time_str} is not a valid time delta expression")
+    if not time_str or not parts:
+        raise ValueError(f"'{time_str}' is not a valid time delta expression")
 
     parts = parts.groupdict()
     time_params = {}
