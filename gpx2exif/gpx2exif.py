@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from fractions import Fraction
 import logging
+import os
 from pathlib import Path
 import re
 import sys
@@ -13,7 +14,7 @@ import pandas as pd
 import piexif
 from termcolor import colored
 
-DEBUG = False
+DEBUG = True
 
 logger = logging.getLogger(__package__)
 
@@ -86,10 +87,19 @@ def get_gps_ifd(lat, lon, altitude=None):
     return gps_ifd
 
 
-def save_exif_with_gps(file_path_s, exif_data, gps_ifd):
-    exif_data.update({"GPS": gps_ifd})
+def _save_exif(file_path_s, exif_data):
     exif_bytes = piexif.dump(exif_data)
     piexif.insert(exif_bytes, file_path_s)
+
+
+def save_exif_with_gps(file_path_s, exif_data, gps_ifd):
+    exif_data.update({"GPS": gps_ifd})
+    _save_exif(file_path_s, exif_data)
+
+
+def clear_gps_from_exif(file_path_s, exif_data):
+    del exif_data["GPS"]
+    _save_exif(file_path_s, exif_data)
 
 
 def compute_pos(img_time, gpx_segments, tolerance):
@@ -182,8 +192,15 @@ def head_image(index, img_path, delta, is_ignore_offset, tz_warning=True):
 
 
 def process_image(
-    img_path, gpx_segments, delta, tolerance, is_ignore_offset, tz_warning=True
+    img_path,
+    gpx_segments,
+    delta,
+    tolerance,
+    is_ignore_offset,
+    is_clear,
+    tz_warning=True,
 ):
+    img_path_s = str(img_path.resolve())
     exif_data = piexif.load(str(img_path.resolve()))
     time_original = read_original_photo_time(exif_data, is_ignore_offset, tz_warning)
     time_corrected = time_original + delta
@@ -196,13 +213,17 @@ def process_image(
             f"Cannot compute position for file {img_path.name} ({time_corrected} "
             f"is outside GPX range + tolerance)"
         )
+        if is_clear:
+            clear_gps_from_exif(img_path_s, exif_data)
+
         return
 
     lat, lon = pos
 
-    logger.debug(f"Lat / Lon {lat} {lon}")
+    logger.debug(f"{os.path.basename(img_path)} => {lat}, {lon}")
+
     gps_ifd = get_gps_ifd(lat, lon)
-    save_exif_with_gps(str(img_path.resolve()), exif_data, gps_ifd)
+    save_exif_with_gps(img_path_s, exif_data, gps_ifd)
     return
 
 
@@ -352,7 +373,7 @@ def setup_logging():
     required=False,
 )
 @click.option(
-    "-d",
+    "-h",
     "--head",
     "is_head",
     is_flag=True,
@@ -363,8 +384,25 @@ def setup_logging():
     ),
     required=False,
 )
+@click.option(
+    "-c",
+    "--clear",
+    "is_clear",
+    is_flag=True,
+    help=(
+        "Flag to indicate that the GPX EXIF fields should be cleared if no position "
+        "can be computed for the photo."
+    ),
+    required=False,
+)
 def gpx2exif(
-    gpx_filepath, img_fileordirpath, delta, tolerance, is_ignore_offset, is_head
+    gpx_filepath,
+    img_fileordirpath,
+    delta,
+    tolerance,
+    is_ignore_offset,
+    is_head,
+    is_clear,
 ):
     if delta:
         logger.info("Parsing time shift...")
@@ -398,7 +436,12 @@ def gpx2exif(
     logger.info("Synching EXIF GPS to GPX...")
     if img_fileordirpath.is_file():
         process_image(
-            img_fileordirpath, gpx_segments, delta, tolerance, is_ignore_offset
+            img_fileordirpath,
+            gpx_segments,
+            delta,
+            tolerance,
+            is_ignore_offset,
+            is_clear,
         )
     elif img_fileordirpath.is_dir():
         tz_warning = True
@@ -413,6 +456,7 @@ def gpx2exif(
                         delta,
                         tolerance,
                         is_ignore_offset,
+                        is_clear,
                         tz_warning,
                     )
                     tz_warning = False
