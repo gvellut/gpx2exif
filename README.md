@@ -79,6 +79,9 @@ Options:
                         DateTimeOriginal tag of the first 10 images (useful
                         for setting the --delta).
 
+  -c, --clear           Flag to indicate that the GPS EXIF fields should be
+                        cleared if no position can be computed for the photo.
+
   --help                Show this message and exit.
 ```
 

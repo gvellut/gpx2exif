@@ -390,7 +390,7 @@ def setup_logging():
     "is_clear",
     is_flag=True,
     help=(
-        "Flag to indicate that the GPX EXIF fields should be cleared if no position "
+        "Flag to indicate that the GPS EXIF fields should be cleared if no position "
         "can be computed for the photo."
     ),
     required=False,
