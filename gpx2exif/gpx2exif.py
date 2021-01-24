@@ -12,6 +12,7 @@ import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import piexif
+import simplekml
 from termcolor import colored
 
 DEBUG = True
@@ -224,7 +225,7 @@ def process_image(
 
     gps_ifd = get_gps_ifd(lat, lon)
     save_exif_with_gps(img_path_s, exif_data, gps_ifd)
-    return
+    return pos
 
 
 def read_original_photo_time(exif_data, is_ignore_offset, tz_warning=True):
@@ -295,6 +296,23 @@ def parse_timedelta(time_str):
             time_params[name] = mult * int(param)
 
     return timedelta(**time_params)
+
+
+def write_kml(positions, kml_path):
+    kml = simplekml.Kml()
+    sharedstyle = simplekml.Style()
+    sharedstyle.balloonstyle.text = "$[description]"
+    for latlon, img_path in positions:
+        img_name = os.path.basename(img_path)
+        desc = f"""<![CDATA[
+ <img src="file://{img_path}" width='500' /><br/><br/>{img_name}<br/>
+ ]]>"""
+        pnt = kml.newpoint(description=desc, coords=[latlon[::-1]])
+        pnt.style = sharedstyle
+    try:
+        kml.save(kml_path)
+    except Exception:
+        logger.exception(f"Unable to save KML to {kml_path}")
 
 
 # specify colors for different logging levels
@@ -385,6 +403,16 @@ def setup_logging():
     required=False,
 )
 @click.option(
+    "-k",
+    "--kml",
+    "kml_output_path",
+    help=(
+        "Path for a KML output file with placemarks for the photos (useful for "
+        "checking the delta)"
+    ),
+    required=False,
+)
+@click.option(
     "-c",
     "--clear",
     "is_clear",
@@ -403,6 +431,7 @@ def gpx2exif(
     is_ignore_offset,
     is_head,
     is_clear,
+    kml_output_path,
 ):
     if delta:
         logger.info("Parsing time shift...")
@@ -435,7 +464,7 @@ def gpx2exif(
 
     logger.info("Synching EXIF GPS to GPX...")
     if img_fileordirpath.is_file():
-        process_image(
+        pos = process_image(
             img_fileordirpath,
             gpx_segments,
             delta,
@@ -443,14 +472,21 @@ def gpx2exif(
             is_ignore_offset,
             is_clear,
         )
+        if kml_output_path:
+            write_kml([(pos, img_fileordirpath)], kml_output_path)
     elif img_fileordirpath.is_dir():
         tz_warning = True
+
+        positions = None
+        if kml_output_path:
+            positions = []
+
         for img_filepath in sorted(img_fileordirpath.iterdir()):
             # do not process hidden files (sometimes used by the OS to store
             # metadata, like .DS_store on macOS)
             if img_filepath.is_file() and not img_filepath.name.startswith("."):
                 try:
-                    process_image(
+                    pos = process_image(
                         img_filepath,
                         gpx_segments,
                         delta,
@@ -460,10 +496,14 @@ def gpx2exif(
                         tz_warning,
                     )
                     tz_warning = False
+                    if kml_output_path:
+                        positions.append((pos, str(img_filepath.resolve())))
                 except piexif.InvalidImageDataError:
                     logger.error(
                         f"File {img_filepath.name} is not a JPEG or TIFF image"
                     )
+        if kml_output_path:
+            write_kml(positions, kml_output_path)
 
 
 def main():
