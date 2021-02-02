@@ -1,7 +1,8 @@
-click==7.1.*
-colorama==0.4.3
-termcolor==1.1.0
-piexif==1.1.*
-gpxpy==1.4.*
-pandas==1.0.*
+click~=7.1.0
+colorama~=0.4.0
+termcolor~=1.1.0
+piexif~=1.1.0
+gpxpy~=1.4.0
+pandas~=1.0.0
 simplekml~=1.3.0
+flickrapi~=2.4.0

@@ -1,6 +1,6 @@
 # gpx2exif
 
-Simple command-line tool to add GPS info from a GPX file to EXIF tags in images
+Simple command-line tool to add GPS info from a GPX file to EXIF tags in images on disk or update an existing Flickr image with the position.
 
 # Motivation
 
@@ -20,9 +20,13 @@ The command above will install the `gpx2exif` Python library and its dependencie
 
 # Time
 
-## Time EXIF tag in images
+## Time EXIF tag in images on disk
 
 The time used for an image is taken from the Date Time Original EXIF metadata tag. In Adobe Bridge, it can be shifted as needed in the UI.
+
+## Time on Fickr
+
+The time used for an image is the Date Taken attribute from the Flickr API.
 
 ##  Correspondence between time in images and GPX
 
@@ -58,32 +62,68 @@ To get some help about the arguments to the command, just launch with the --help
 
 ```
 ~$ gpx2exif --help
-Usage: gpx2exif [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
+Usage: gpx2exif [OPTIONS] COMMAND [ARGS]...
+
+  Synch GPX file to images on disk or on Flickr
 
 Options:
-  -d, --delta TEXT      Time shift to apply to the photo Date Time Original
-                        EXIF tag to match the date in GPX (see documentation
-                        for format). Use if there is a drift in the camera
-                        compared to the GPS recorder or if an offset is not
-                        present in the EXIF. (default: no shift)
+  --debug   Flag to activate debug mode
+  --help    Show this message and exit.
 
-  -t, --tolerance TEXT  Tolerance if time of photo is not inside the time
-                        range of the GPX track. (default: 10s)
-
-  -o, --ignore-offset   Flag to indicate that the OffsetTimeOriginal should
-                        not be used (time of images is assumed UTC). Use
-                        --delta to compensate for both timezone and drift.
-
-  -d, --head            Flag to indicate if the tool should just output the
-                        times of the first 10 track points in the GPX and the
-                        DateTimeOriginal tag of the first 10 images (useful
-                        for setting the --delta).
-
-  -c, --clear           Flag to indicate that the GPS EXIF fields should be
-                        cleared if no position can be computed for the photo.
-
-  --help                Show this message and exit.
+Commands:
+  flickr
+  image
 ```
+
+## image subcommand
+
+The image subcommand allows to synch a GPX file with an image file or a folder of image files on a loca disk :
+
+```
+~$ gpx2exif image --help
+Usage: gpx2exif image [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
+
+Options:
+  -d, --delta TEXT                Time shift to apply to the photo Date Time
+                                  Original EXIF tag to match the date in GPX
+                                  (see documentation for format). Use if there
+                                  is a drift in the camera compared to the GPS
+                                  recorder or if an offset is not present in
+                                  the EXIF. (default: no shift)
+
+  -t, --tolerance TEXT            Tolerance if time of photo is not inside the
+                                  time range of the GPX track. (default: 10s)
+
+  -o, --ignore-offset             Flag to indicate that the OffsetTimeOriginal
+                                  should not be used (time of images is
+                                  assumed UTC). Use --delta to compensate for
+                                  both timezone and drift.
+
+  -h, --head                      Flag to indicate if the tool should just
+                                  output the times of the first 10 track
+                                  points in the GPX and the DateTimeOriginal
+                                  tag of the first 10 images (useful for
+                                  setting the --delta).
+
+  -c, --clear                     Flag to indicate that the GPS EXIF fields
+                                  should be cleared if no position can be
+                                  computed for the photo.
+
+  -k, --kml TEXT                  Path for a KML output file with placemarks
+                                  for the photos (useful for checking the
+                                  delta)
+
+  --update-images / --no-update-images
+                                  Flag to indicate that the images should not
+                                  be udpated and only a KML will generated
+
+  --kml_thumbnail_size INTEGER    Pixel size of the image popup in the KML
+  --help                          Show this message and exit.
+```
+
+## flickr subcommand
+
+TODO
 
 # Examples
 
@@ -92,7 +132,7 @@ Options:
 The following command will synch the location data found in the GPX file with a single image, moving forward the time in the image by 2 minutes and 25 seconds:
 
 ```console
-gpx2exif geopaparazzi_20200315_183754.gpx dsc004239.jpg --delta 2m25s
+gpx2exif image geopaparazzi_20200315_183754.gpx dsc004239.jpg --delta 2m25s
 ```
 
 After running this command, the photo will be updated with the location of the GPX track point that is the closest in time.
@@ -102,5 +142,5 @@ After running this command, the photo will be updated with the location of the G
 Instead of a single file, it is possible to pass a folder:
 
 ```console
-gpx2exif geopaparazzi_20200315_183754.gpx photos --delta 2m25s
+gpx2exif image geopaparazzi_20200315_183754.gpx photos --delta 2m25s
 ```

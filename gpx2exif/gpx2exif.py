@@ -15,7 +15,16 @@ import piexif
 import simplekml
 from termcolor import colored
 
-DEBUG = True
+from .common import (
+    clear_option,
+    delta_option,
+    head_option,
+    ignore_offset_option,
+    kml_option,
+    kml_thumbnail_size_option,
+    tolerance_option,
+    update_images_option,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -149,7 +158,7 @@ def compute_pos(img_time, gpx_segments, tolerance):
     return None
 
 
-def process_head(
+def output_head_image(
     img_fileordirpath, gpx_segments, delta, is_ignore_offset, head_limit=10
 ):
     counter = 0
@@ -199,6 +208,7 @@ def process_image(
     tolerance,
     is_ignore_offset,
     is_clear,
+    is_update_images,
     tz_warning=True,
 ):
     img_path_s = str(img_path.resolve())
@@ -214,7 +224,7 @@ def process_image(
             f"Cannot compute position for file {img_path.name} ({time_corrected} "
             f"is outside GPX range + tolerance)"
         )
-        if is_clear:
+        if is_clear and is_update_images:
             clear_gps_from_exif(img_path_s, exif_data)
 
         return
@@ -223,8 +233,9 @@ def process_image(
 
     logger.debug(f"{os.path.basename(img_path)} => {lat}, {lon}")
 
-    gps_ifd = get_gps_ifd(lat, lon)
-    save_exif_with_gps(img_path_s, exif_data, gps_ifd)
+    if is_update_images:
+        gps_ifd = get_gps_ifd(lat, lon)
+        save_exif_with_gps(img_path_s, exif_data, gps_ifd)
     return pos
 
 
@@ -298,14 +309,15 @@ def parse_timedelta(time_str):
     return timedelta(**time_params)
 
 
-def write_kml(positions, kml_path):
+def write_kml(positions, kml_path, kml_thumbnail_size):
     kml = simplekml.Kml()
     sharedstyle = simplekml.Style()
     sharedstyle.balloonstyle.text = "$[description]"
     for latlon, img_path in positions:
         img_name = os.path.basename(img_path)
         desc = f"""<![CDATA[
- <img src="file://{img_path}" width='500' /><br/><br/>{img_name}<br/>
+ <img src="file://{img_path}" width='{kml_thumbnail_size}' /><br/><br/>
+ {img_name}<br/>
  ]]>"""
         pnt = kml.newpoint(description=desc, coords=[latlon[::-1]])
         pnt.style = sharedstyle
@@ -330,9 +342,9 @@ class ColorFormatter(logging.Formatter):
         return super().format(record, *args, **kwargs)
 
 
-def setup_logging():
+def setup_logging(is_debug):
     global logger
-    if DEBUG:
+    if is_debug:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
@@ -344,126 +356,17 @@ def setup_logging():
     logger.addHandler(handler)
 
 
-@click.command()
-@click.argument(
-    "gpx_filepath",
-    metavar="GPX_FILE",
-    type=click.Path(exists=True, resolve_path=True, dir_okay=False),
-)
-@click.argument(
-    "img_fileordirpath",
-    metavar="IMAGE_FILE_OR_DIR",
-    type=click.Path(exists=True, resolve_path=True),
-)
-@click.option(
-    "-d",
-    "--delta",
-    "delta",
-    help=(
-        "Time shift to apply to the photo Date Time Original EXIF tag "
-        "to match the date in GPX (see documentation for format). Use if there is a "
-        "drift in the camera compared to the GPS recorder or if an offset "
-        "is not present in the EXIF. (default: no shift)"
-    ),
-    required=False,
-)
-@click.option(
-    "-t",
-    "--tolerance",
-    "tolerance",
-    help=(
-        "Tolerance if time of photo is not inside the time range of the GPX track. "
-        "(default: 10s)"
-    ),
-    required=False,
-    default="10s",
-)
-@click.option(
-    "-o",
-    "--ignore-offset",
-    "is_ignore_offset",
-    is_flag=True,
-    help=(
-        "Flag to indicate that the OffsetTimeOriginal should not be used (time of "
-        "images is assumed UTC). Use --delta to compensate for both timezone and "
-        "drift."
-    ),
-    required=False,
-)
-@click.option(
-    "-h",
-    "--head",
-    "is_head",
-    is_flag=True,
-    help=(
-        "Flag to indicate if the tool should just output the times of the first "
-        "10 track points in the GPX and the DateTimeOriginal tag of the first "
-        "10 images (useful for setting the --delta)."
-    ),
-    required=False,
-)
-@click.option(
-    "-k",
-    "--kml",
-    "kml_output_path",
-    help=(
-        "Path for a KML output file with placemarks for the photos (useful for "
-        "checking the delta)"
-    ),
-    required=False,
-)
-@click.option(
-    "-c",
-    "--clear",
-    "is_clear",
-    is_flag=True,
-    help=(
-        "Flag to indicate that the GPS EXIF fields should be cleared if no position "
-        "can be computed for the photo."
-    ),
-    required=False,
-)
-def gpx2exif(
-    gpx_filepath,
+def synch_gps_exif(
     img_fileordirpath,
+    gpx_segments,
     delta,
     tolerance,
     is_ignore_offset,
-    is_head,
     is_clear,
-    kml_output_path,
+    is_update_images,
 ):
-    if delta:
-        logger.info("Parsing time shift...")
-        delta = parse_timedelta(delta)
-    else:
-        delta = timedelta(0)
-    logger.info(colored(f"Time shift: {int(delta.total_seconds())}s", "green"))
-
-    if tolerance:
-        logger.info("Parsing tolerance...")
-        # in case negative
-        tolerance = timedelta(seconds=abs(parse_timedelta(tolerance).total_seconds()))
-    else:
-        tolerance = timedelta(seconds=10)
-    logger.info(colored(f"Tolerance: {int(tolerance.total_seconds())}s", "green"))
-
-    logger.info("Parsing GPX...")
-    gpx_segments = read_gpx(gpx_filepath)
-    logger.info(
-        f"GPX time range: {gpx_segments[0].iloc[0].name} => "
-        f"{gpx_segments[-1].iloc[0-1].name}"
-    )
-
-    img_fileordirpath = Path(img_fileordirpath)
-
-    if is_head:
-        logger.info("Head...")
-        process_head(img_fileordirpath, gpx_segments, delta, is_ignore_offset)
-        return
-
-    logger.info("Synching EXIF GPS to GPX...")
     if img_fileordirpath.is_file():
+        positions = []
         pos = process_image(
             img_fileordirpath,
             gpx_segments,
@@ -471,16 +374,14 @@ def gpx2exif(
             tolerance,
             is_ignore_offset,
             is_clear,
+            is_update_images,
         )
-        if kml_output_path:
-            write_kml([(pos, img_fileordirpath)], kml_output_path)
+        if pos:
+            positions.append((pos, str(img_fileordirpath.resolve())))
+        return positions
     elif img_fileordirpath.is_dir():
         tz_warning = True
-
-        positions = None
-        if kml_output_path:
-            positions = []
-
+        positions = []
         for img_filepath in sorted(img_fileordirpath.iterdir()):
             # do not process hidden files (sometimes used by the OS to store
             # metadata, like .DS_store on macOS)
@@ -493,28 +394,151 @@ def gpx2exif(
                         tolerance,
                         is_ignore_offset,
                         is_clear,
+                        is_update_images,
                         tz_warning,
                     )
+                    # TODO ensure TZ Warning has really been output
                     tz_warning = False
-                    if kml_output_path:
+                    if pos:
                         positions.append((pos, str(img_filepath.resolve())))
                 except piexif.InvalidImageDataError:
                     logger.error(
                         f"File {img_filepath.name} is not a JPEG or TIFF image"
                     )
-        if kml_output_path:
-            write_kml(positions, kml_output_path)
+
+        return positions
 
 
-def main():
-    setup_logging()
+def process_delta(delta):
+    if delta:
+        logger.info("Parsing time shift...")
+        delta = parse_timedelta(delta)
+    else:
+        delta = timedelta(0)
+    logger.info(colored(f"Time shift: {int(delta.total_seconds())}s", "green"))
+    return delta
+
+
+def process_tolerance(tolerance):
+    if tolerance:
+        logger.info("Parsing tolerance...")
+        # in case negative
+        tolerance = timedelta(seconds=abs(parse_timedelta(tolerance).total_seconds()))
+    else:
+        tolerance = timedelta(seconds=10)
+    logger.info(colored(f"Tolerance: {int(tolerance.total_seconds())}s", "green"))
+    return tolerance
+
+
+def process_gpx(gpx_filepath):
+    logger.info("Parsing GPX...")
+    gpx_segments = read_gpx(gpx_filepath)
+    logger.info(
+        f"GPX time range: {gpx_segments[0].iloc[0].name} => "
+        f"{gpx_segments[-1].iloc[0-1].name}"
+    )
+    return gpx_segments
+
+
+def process_kml(positions, kml_output_path, kml_thumbnail_size):
+    if kml_output_path:
+        logger.info("Writing KML...")
+        if len(positions) > 0:
+            write_kml(positions, kml_output_path, kml_thumbnail_size)
+        else:
+            logger.warning("No KML output!")
+
+
+@click.group()
+@click.option(
+    "--debug",
+    "is_debug",
+    is_flag=True,
+    help=("Flag to activate debug mode"),
+    required=False,
+)
+@click.pass_context
+def main(ctx, is_debug):
+    """ Synch GPX file to images on disk or on Flickr """
+    setup_logging(is_debug)
+    ctx.obj = {"DEBUG": is_debug}
+
+
+@main.command("image")
+@click.argument(
+    "gpx_filepath",
+    metavar="GPX_FILE",
+    type=click.Path(exists=True, resolve_path=True, dir_okay=False),
+)
+@click.argument(
+    "img_fileordirpath",
+    metavar="IMAGE_FILE_OR_DIR",
+    type=click.Path(exists=True, resolve_path=True),
+)
+@delta_option
+@tolerance_option
+@ignore_offset_option
+@head_option
+@clear_option
+@kml_option
+@update_images_option
+@kml_thumbnail_size_option
+@click.pass_context
+def gpx2exif(
+    ctx,
+    gpx_filepath,
+    img_fileordirpath,
+    delta,
+    tolerance,
+    is_ignore_offset,
+    is_head,
+    is_clear,
+    kml_output_path,
+    kml_thumbnail_size,
+    is_update_images,
+):
     try:
-        gpx2exif()
+        delta = process_delta(delta)
+        tolerance = process_tolerance(tolerance)
+        gpx_segments = process_gpx(gpx_filepath)
+
+        img_fileordirpath = Path(img_fileordirpath)
+
+        if is_head:
+            if is_clear:
+                logger.warning("--clear has no effect with --head!")
+            if kml_output_path:
+                logger.warning("--kml has no effect with --head!")
+
+            logger.info("Head...")
+            output_head_image(img_fileordirpath, gpx_segments, delta, is_ignore_offset)
+            return
+
+        logger.info("Synching EXIF GPS to GPX...")
+        if not is_update_images:
+            logger.warning("The images will not be updated with the positions!")
+        positions = synch_gps_exif(
+            img_fileordirpath,
+            gpx_segments,
+            delta,
+            tolerance,
+            is_ignore_offset,
+            is_clear,
+            is_update_images,
+        )
+
+        process_kml(positions, kml_output_path, kml_thumbnail_size)
+
     except Exception as ex:
         logger.error("*** An unrecoverable error occured ***")
-        lf = logger.error if not DEBUG else logger.exception
+        lf = logger.error if not ctx.obj["DEBUG"] else logger.exception
         lf(str(ex))
         sys.exit(1)
+
+
+@main.command("flickr")
+def gpx2flickr():
+    pass
 
 
 if __name__ == "__main__":
