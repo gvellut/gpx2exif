@@ -1,6 +1,6 @@
 # gpx2exif
 
-Simple command-line tool to add GPS info from a GPX file to EXIF tags in images on disk or update the images inside a Flickr alb um with the position.
+Simple command-line tool to add GPS info from a GPX file to EXIF tags in local images or to images hosted on Flickr
 
 # Motivation
 
@@ -219,4 +219,7 @@ gpx2exif image geopaparazzi_20200315_183754.gpx photos --delta 2m25s
 You must get the URL of an album from Flickr. 
 
 ```console
-gpx2exif image geopaparazzi_20200315_183754.gpx photos --delta 2m25s
+gpx2exif flickr geopaparazzi_20200315_183754.gpx https://www.flickr.com/photos/o_0/albums/72157713927736642 --delta 2m25s
+```
+
+(the API key and secret come from a config file and do not need to be passed to the command)
