@@ -1,8 +1,11 @@
 click~=7.1.0
+click-config-file~=0.6.0
 colorama~=0.4.0
 termcolor~=1.1.0
+addict~=2.4.0
 piexif~=1.1.0
 gpxpy~=1.4.0
 pandas~=1.0.0
 simplekml~=1.3.0
 flickrapi~=2.4.0
+python-dateutil~=2.8.0

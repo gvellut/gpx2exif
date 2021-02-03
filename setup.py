@@ -47,7 +47,7 @@ setup_args = dict(
         "Bug Reports": "https://github.com/gvellut/gpx2exif/issues",
         "Source": "https://github.com/gvellut/gpx2exif",
     },
-    entry_points={"console_scripts": ["gpx2exit=gpx2exif.gpx2exif:main"]},
+    entry_points={"console_scripts": ["gpx2exit=gpx2exif.main:main"]},
 )
 
 setup(**setup_args)
