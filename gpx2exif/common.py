@@ -21,6 +21,7 @@ delta_option = click.option(
         "[default: no shift]"
     ),
     required=False,
+    multiple=True,
 )
 
 tolerance_option = click.option(
@@ -125,13 +126,28 @@ def compute_pos(img_time, gpx_segments, tolerance):
     return None
 
 
-def process_delta(delta):
-    if delta:
+def _format_timedelta(td):
+    if td < timedelta(0):
+        return "-" + _format_timedelta(-td)
+    else:
+        s = int(td.total_seconds())
+        hours, remainder = divmod(s, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours}h{minutes}m{seconds}s"
+
+
+def process_delta(deltas):
+    if deltas:
         logger.info("Parsing time shift...")
-        delta = parse_timedelta(delta)
+        delta = timedelta(0)
+        for delta_s in deltas:
+            delta += parse_timedelta(delta_s)
     else:
         delta = timedelta(0)
-    logger.info(colored(f"Time shift: {int(delta.total_seconds())}s", "green"))
+
+    delta_s = _format_timedelta(delta)
+
+    logger.info(colored(f"Time shift: {delta_s}", "green"))
     return delta
 
 
@@ -211,7 +227,7 @@ def process_kml(positions, kml_output_path, kml_thumbnail_size, image_src, image
                 positions, kml_output_path, kml_thumbnail_size, image_src, image_name
             )
         else:
-            logger.warning("No KML output!")
+            logger.warning("No KML output (no georeferenced photos)!")
 
 
 def write_kml(positions, kml_path, kml_thumbnail_size, image_src, image_name):
