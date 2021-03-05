@@ -219,7 +219,7 @@ def gpx2flickr(
     api_key,
     api_secret,
 ):
-    """ Add location information to Flickr images  based on a GPX file """
+    """ Add location information to Flickr images based on a GPX file """
 
     try:
         delta = process_delta(delta)

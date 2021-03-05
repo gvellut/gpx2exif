@@ -96,24 +96,22 @@ Usage: gpx2exif image [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
   Add GPS EXIF tags to local images based on a GPX fie
 
 Options:
-  -d, --delta TEXT                Time shift to apply to the photo Date Time
-                                  Original EXIF tag to match the date in GPX
-                                  (see documentation for format). Use if there
-                                  is a drift in the camera compared to the GPS
-                                  recorder or if an offset is not present in
-                                  the EXIF. (default: no shift)
+  -d, --delta TEXT                Time shift to apply to the photo times to
+                                  match the date in GPX (see documentation for
+                                  format). [default: no shift]
 
-  -t, --tolerance TEXT            Tolerance if time of photo is not inside the
-                                  time range of the GPX track. (default: 10s)
+  -t, --tolerance TEXT            Tolerance if time of the photo is not inside
+                                  the time range of the GPX track. (default:
+                                  10s)
 
   -o, --ignore-offset             Flag to indicate that the OffsetTimeOriginal
                                   should not be used (time of images is
                                   assumed UTC). Use --delta to compensate for
                                   both timezone and drift.
 
-  -c, --clear                     Flag to indicate that the GPS EXIF fields
-                                  should be cleared if no position can be
-                                  computed for the photo.
+  -c, --clear                     Flag to indicate that the times of the
+                                  photos should be cleared if no position can
+                                  be computed.
 
   -k, --kml TEXT                  Path for a KML output file with placemarks
                                   for the photos (useful for checking the
@@ -165,7 +163,6 @@ Options:
                                   Support/gpx2exif/flickr_api_credentials.txt]
 
   --help                          Show this message and exit.
-
 ```
 
 ### Flickr API permision
