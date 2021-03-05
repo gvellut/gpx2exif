@@ -183,7 +183,7 @@ The first time the tool is run on the command-line, a token for accessing the AP
 - A web page in the default browser will open. 
 - If not logged in to Flickr, a Flickr login screen will be presented in order to log in to Flickr. 
 - Then a request to grant permission to the application is made: The permission is only given for the specific API key obtained when registering yourself.
-- Once pernission has been granted by the logged in user, a 9-digit code will be displayed: It needs to be copied and pasted on the command line after the prompt "Verifier code:".
+- Once permission has been granted by the logged in user, a 9-digit code will be displayed: It needs to be copied and pasted on the command line after the prompt "Verifier code:".
 
 After that process, an access token will be cached inside an `oauth-tokens.sqlite` file stored on the same directory as the default location of the API key config file (which can vary depending on the OS ; See above).
 
