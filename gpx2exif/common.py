@@ -236,7 +236,7 @@ def write_kml(positions, kml_path, kml_thumbnail_size, image_src, image_name):
     sharedstyle.balloonstyle.text = "$[description]"
     for latlon, image in positions:
         desc = f"""<![CDATA[
- <img src="{image_src(image)}" width='{kml_thumbnail_size}' /><br/><br/>
+ <img src="{image_src(image)}" width="{kml_thumbnail_size}" /><br/><br/>
  {image_name(image)}<br/>
  ]]>"""
         pnt = kml.newpoint(description=desc, coords=[latlon[::-1]])

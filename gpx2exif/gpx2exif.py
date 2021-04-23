@@ -285,6 +285,9 @@ def gpx2exif(
         )
 
         def image_src(x):
+            # issue on Windows if backslash left as is + GE needs a starting /
+            if os.name == "nt":
+                x = "/" + x.replace("\\", "/")
             return f"file://{x}"
 
         image_name = os.path.basename
