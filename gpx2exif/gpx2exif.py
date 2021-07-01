@@ -24,6 +24,7 @@ from .common import (
 
 logger = logging.getLogger(__package__)
 
+
 # code for GPS EXIF https://gist.github.com/c060604/8a51f8999be12fc2be498e9ca56adc72
 
 
@@ -104,8 +105,9 @@ def save_exif_with_gps(file_path_s, exif_data, gps_ifd):
 
 
 def clear_gps_from_exif(file_path_s, exif_data):
-    del exif_data["GPS"]
-    _save_exif(file_path_s, exif_data)
+    if exif_data.get("GPS"):
+        del exif_data["GPS"]
+        _save_exif(file_path_s, exif_data)
 
 
 def process_image(
@@ -121,6 +123,16 @@ def process_image(
     img_path_s = str(img_path.resolve())
     exif_data = piexif.load(str(img_path.resolve()))
     time_original = read_original_photo_time(exif_data, is_ignore_offset, tz_warning)
+    if not time_original:
+        logger.warning(
+            f"Cannot compute position for file {img_path.name} "
+            "(No DateTimeOriginal tag found)"
+        )
+        if is_clear and is_update_images:
+            clear_gps_from_exif(img_path_s, exif_data)
+
+        return
+
     time_corrected = time_original + delta
 
     logger.debug(f"Time corrected {time_corrected.isoformat()}")
@@ -147,6 +159,9 @@ def process_image(
 
 
 def read_original_photo_time(exif_data, is_ignore_offset, tz_warning=True):
+    if piexif.ExifIFD.DateTimeOriginal not in exif_data["Exif"]:
+        return None
+
     dt_original = exif_data["Exif"][piexif.ExifIFD.DateTimeOriginal]
     dt_original = dt_original.decode("ascii")
     dt_format = "%Y:%m:%d %H:%M:%S"
