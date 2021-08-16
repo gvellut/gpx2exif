@@ -14,9 +14,10 @@ from .common import (
     clear_option,
     compute_pos,
     delta_option,
+    delta_tz_option,
     kml_option,
     kml_thumbnail_size_option,
-    process_delta,
+    process_deltas,
     process_gpx,
     process_kml,
     process_tolerance,
@@ -179,6 +180,7 @@ CONFIG_FILE_HELP = (
     "flickr_album", metavar="FLICKR_ALBUM_URL", callback=parse_album_url,
 )
 @delta_option
+@delta_tz_option
 @tolerance_option
 @clear_option
 @kml_option
@@ -211,6 +213,7 @@ def gpx2flickr(
     gpx_filepath,
     flickr_album,
     delta,
+    delta_tz,
     tolerance,
     is_clear,
     kml_output_path,
@@ -222,7 +225,8 @@ def gpx2flickr(
     """ Add location information to Flickr images based on a GPX file """
 
     try:
-        delta = process_delta(delta)
+        delta, delta_tz = process_deltas(delta, delta_tz)
+
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
 

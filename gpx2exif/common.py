@@ -18,10 +18,24 @@ delta_option = click.option(
     help=(
         "Time shift to apply to the photo times "
         "to match the date in GPX (see documentation for format). "
+        "Multiple possible."
         "[default: no shift]"
     ),
     required=False,
     multiple=True,
+)
+
+delta_tz_option = click.option(
+    "-d",
+    "--delta-tz",
+    "delta_tz",
+    help=(
+        "Time zone shift to apply to the photo times "
+        "to match the date in GPX (see documentation for format). "
+        "If present, assumes --ignore-offset."
+        "[default: no shift (timezone of the image if present)]"
+    ),
+    required=False,
 )
 
 tolerance_option = click.option(
@@ -75,6 +89,18 @@ clear_option = click.option(
     help=(
         "Flag to indicate that the times of the photos should be cleared if no "
         "position can be computed."
+    ),
+    required=False,
+)
+
+update_time_option = click.option(
+    "-u",
+    "--update-time/--no-update-time",
+    "is_update_time",
+    default=False,
+    help=(
+        "Flag to indicate that the times of the photos should be updated according to "
+        "the delta."
     ),
     required=False,
 )
@@ -145,10 +171,26 @@ def process_delta(deltas):
     else:
         delta = timedelta(0)
 
-    delta_s = _format_timedelta(delta)
-
-    logger.info(colored(f"Time shift: {delta_s}", "green"))
     return delta
+
+
+def process_deltas(delta, delta_tz):
+    delta = process_delta(delta)
+    _print_delta(delta)
+
+    if delta_tz:
+        delta_tz = process_delta([delta_tz])
+        _print_delta(delta_tz, "TZ time")
+
+        delta += delta_tz
+        _print_delta(delta, "Total time")
+
+    return delta, delta_tz
+
+
+def _print_delta(delta, delta_type="Time"):
+    delta_s = _format_timedelta(delta)
+    logger.info(colored(f"{delta_type} shift: {delta_s}", "green"))
 
 
 def process_tolerance(tolerance):

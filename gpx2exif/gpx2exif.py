@@ -12,14 +12,16 @@ from .common import (
     clear_option,
     compute_pos,
     delta_option,
+    delta_tz_option,
     kml_option,
     kml_thumbnail_size_option,
-    process_delta,
+    process_deltas,
     process_gpx,
     process_kml,
     process_tolerance,
     tolerance_option,
     update_images_option,
+    update_time_option,
 )
 
 logger = logging.getLogger(__package__)
@@ -94,48 +96,63 @@ def get_gps_ifd(lat, lon, altitude=None):
     return gps_ifd
 
 
-def _save_exif(file_path_s, exif_data):
+def flush_exif(file_path_s, exif_data):
     exif_bytes = piexif.dump(exif_data)
     piexif.insert(exif_bytes, file_path_s)
 
 
-def save_exif_with_gps(file_path_s, exif_data, gps_ifd):
+def save_exif_with_gps(exif_data, gps_ifd):
     exif_data.update({"GPS": gps_ifd})
-    _save_exif(file_path_s, exif_data)
+    return True
 
 
-def clear_gps_from_exif(file_path_s, exif_data):
+def clear_gps_from_exif(exif_data):
     if exif_data.get("GPS"):
         del exif_data["GPS"]
-        _save_exif(file_path_s, exif_data)
+        return True
+    return False
 
 
+# TODO simplify parameters => struct
 def process_image(
     img_path,
     gpx_segments,
     delta,
+    delta_tz,
     tolerance,
     is_ignore_offset,
     is_clear,
     is_update_images,
+    is_update_time,
     tz_warning=True,
 ):
     img_path_s = str(img_path.resolve())
     exif_data = piexif.load(str(img_path.resolve()))
     time_original = read_original_photo_time(exif_data, is_ignore_offset, tz_warning)
+
+    to_flush = False
+
     if not time_original:
         logger.warning(
             f"Cannot compute position for file {img_path.name} "
             "(No DateTimeOriginal tag found)"
         )
-        if is_clear and is_update_images:
-            clear_gps_from_exif(img_path_s, exif_data)
+        if is_update_images and is_clear:
+            to_flush = clear_gps_from_exif(exif_data) or to_flush
 
-        return
+        if to_flush:
+            flush_exif(img_path_s, exif_data)
+        return None
 
     time_corrected = time_original + delta
 
     logger.debug(f"Time corrected {time_corrected.isoformat()}")
+
+    if is_update_images and is_update_time:
+        update_original_photo_time(
+            exif_data, time_corrected, delta_tz, is_ignore_offset
+        )
+        to_flush = True
 
     pos = compute_pos(time_corrected, gpx_segments, tolerance)
     if not pos:
@@ -143,10 +160,12 @@ def process_image(
             f"Cannot compute position for file {img_path.name} ({time_corrected} "
             f"is outside GPX range + tolerance)"
         )
-        if is_clear and is_update_images:
-            clear_gps_from_exif(img_path_s, exif_data)
+        if is_update_images and is_clear:
+            to_flush = clear_gps_from_exif(exif_data) or to_flush
 
-        return
+        if to_flush:
+            flush_exif(img_path_s, exif_data)
+        return None
 
     lat, lon = pos
 
@@ -154,7 +173,11 @@ def process_image(
 
     if is_update_images:
         gps_ifd = get_gps_ifd(lat, lon)
-        save_exif_with_gps(img_path_s, exif_data, gps_ifd)
+        save_exif_with_gps(exif_data, gps_ifd)
+        to_flush = True
+
+    if to_flush:
+        flush_exif(img_path_s, exif_data)
     return pos
 
 
@@ -176,7 +199,10 @@ def read_original_photo_time(exif_data, is_ignore_offset, tz_warning=True):
         dt_original = datetime.strptime(dt_original, dt_format)
     else:
         if tz_warning:
-            logger.warning("No offset in EXIF. Assume UTC (+00:00)")
+            if is_ignore_offset:
+                logger.warning("Offset ignored in EXIF. Assume UTC (+00:00)")
+            else:
+                logger.warning("No offset in EXIF. Assume UTC (+00:00)")
         dt_original = datetime.strptime(dt_original, dt_format)
         # assume UTC
         dt_original = dt_original.replace(tzinfo=timezone.utc)
@@ -184,14 +210,35 @@ def read_original_photo_time(exif_data, is_ignore_offset, tz_warning=True):
     return dt_original
 
 
+def update_original_photo_time(exif_data, dt, delta_tz, is_ignore_offset):
+    dt_format = "%Y:%m:%d %H:%M:%S"
+
+    if delta_tz:
+        # the delta_tz transforms from local time to UTC and has been added
+        # to the delta already
+        # to stay in local time, substract it
+        dt -= delta_tz
+
+    dt_original = datetime.strftime(dt, dt_format)
+    exif_data["Exif"][piexif.ExifIFD.DateTimeOriginal] = dt_original.encode("ascii")
+
+    if is_ignore_offset:
+        # TODO other option would be to set it to delta_tz
+        # delete if present
+        if piexif.ExifIFD.OffsetTimeOriginal in exif_data["Exif"]:
+            del exif_data["Exif"][piexif.ExifIFD.OffsetTimeOriginal]
+
+
 def synch_gps_exif(
     img_fileordirpath,
     gpx_segments,
     delta,
+    delta_tz,
     tolerance,
     is_ignore_offset,
     is_clear,
     is_update_images,
+    is_update_time,
 ):
     if img_fileordirpath.is_file():
         positions = []
@@ -199,10 +246,12 @@ def synch_gps_exif(
             img_fileordirpath,
             gpx_segments,
             delta,
+            delta_tz,
             tolerance,
             is_ignore_offset,
             is_clear,
             is_update_images,
+            is_update_time,
         )
         if pos:
             positions.append((pos, str(img_fileordirpath.resolve())))
@@ -219,10 +268,12 @@ def synch_gps_exif(
                         img_filepath,
                         gpx_segments,
                         delta,
+                        delta_tz,
                         tolerance,
                         is_ignore_offset,
                         is_clear,
                         is_update_images,
+                        is_update_time,
                         tz_warning,
                     )
                     # TODO ensure TZ Warning has really been output
@@ -248,6 +299,7 @@ def synch_gps_exif(
     type=click.Path(exists=True, resolve_path=True),
 )
 @delta_option
+@delta_tz_option
 @tolerance_option
 @click.option(
     "-o",
@@ -264,6 +316,7 @@ def synch_gps_exif(
 @clear_option
 @kml_option
 @update_images_option
+@update_time_option
 @kml_thumbnail_size_option
 @click.pass_context
 def gpx2exif(
@@ -271,16 +324,22 @@ def gpx2exif(
     gpx_filepath,
     img_fileordirpath,
     delta,
+    delta_tz,
     tolerance,
     is_ignore_offset,
     is_clear,
     kml_output_path,
     kml_thumbnail_size,
     is_update_images,
+    is_update_time,
 ):
-    """ Add GPS EXIF tags to local images based on a GPX fie """
+    """ Add GPS EXIF tags to local images based on a GPX file """
     try:
-        delta = process_delta(delta)
+        if delta_tz:
+            is_ignore_offset = True
+
+        delta, delta_tz = process_deltas(delta, delta_tz)
+
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
 
@@ -289,14 +348,20 @@ def gpx2exif(
         logger.info("Synching EXIF GPS to GPX...")
         if not is_update_images:
             logger.warning("The images will not be updated with the positions!")
+
+        if is_update_images and is_update_time:
+            logger.warning("The times in the images will be updated!")
+
         positions = synch_gps_exif(
             img_fileordirpath,
             gpx_segments,
             delta,
+            delta_tz,
             tolerance,
             is_ignore_offset,
             is_clear,
             is_update_images,
+            is_update_time,
         )
 
         def image_src(x):
