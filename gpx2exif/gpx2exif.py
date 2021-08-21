@@ -13,6 +13,7 @@ from .common import (
     compute_pos,
     delta_option,
     delta_tz_option,
+    format_timedelta,
     kml_option,
     kml_thumbnail_size_option,
     process_deltas,
@@ -219,6 +220,9 @@ def update_original_photo_time(exif_data, dt, delta_tz, is_ignore_offset):
         # to stay in local time, substract it
         dt -= delta_tz
 
+    # if Time Offset present in original photo, the dt is a datetime with
+    # timezone and strftime will print the local time part
+    # if not, it is in local time
     dt_original = datetime.strftime(dt, dt_format)
     exif_data["Exif"][piexif.ExifIFD.DateTimeOriginal] = dt_original.encode("ascii")
 
@@ -347,10 +351,11 @@ def gpx2exif(
 
         logger.info("Synching EXIF GPS to GPX...")
         if not is_update_images:
-            logger.warning("The images will not be updated with the positions!")
+            logger.warning("The images will not be updated!")
 
         if is_update_images and is_update_time:
-            logger.warning("The times in the images will be updated!")
+            fdt = format_timedelta(delta)
+            logger.warning(f"The times in the images will be shifted: {fdt}!")
 
         positions = synch_gps_exif(
             img_fileordirpath,

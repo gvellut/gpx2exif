@@ -24,7 +24,7 @@ The command above will install the `gpx2exif` Python library and its dependencie
 
 ##  Correspondence between time in images and GPX
 
-In the tool, the time in an image is first shifted using the value for the `--delta` switch if present. This switch can be used to correct for the time drift in the camera relative to the GPS logger or correct the time zone (see above). The goal is to align the times in the images with the times in the GPX, assumed to be in __UTC__. The corrected image time is then used to extract a Lat / Lon position from the GPX file (which is essentially a mapping from time to position), which is then added to the EXIF metadata of the image.
+In the tool, the time in an image is first shifted using the value for the `--delta` option if present. This option can be used to correct for the time drift in the camera relative to the GPS logger or correct the time zone (in the latter case the `--delta-tz` option is preferred; See below). The goal is to align the times in the images with the times in the GPX, assumed to be in __UTC__. The corrected image time is then used to extract a Lat / Lon position from the GPX file (which is essentially a mapping from time to position), which is then added to the EXIF metadata of the image.
 
 There is no switch to shift the time for the GPX file like there is for images: The GPX is assumed to be the reference.
 
@@ -33,13 +33,19 @@ There is no switch to shift the time for the GPX file like there is for images: 
 
 ### Time EXIF tag
 
-The time used for an image is taken from the __Date Time Original__ EXIF metadata tag. In Adobe Bridge, it can be shifted as needed in the UI.
+The time used for an image is taken from the __Date Time Original__ EXIF metadata tag. In Adobe Bridge, it can be shifted as needed in the UI. It can be also shifted using the `--delta` and `--delta-tz` options using `gpx2exif`.
 
 ### Time zone
 
-There is no standard time zone tag in EXIF. Some cameras will set the __Offset Time Original__ tag to a time shift (something like "+02:00"), which, by default, is read by the tool in order to set a zone. If this tag is not present, the zone of the times in the images is assumed to be UTC ("+00:00"). In that case, if the times in the images are actually in local time, the `--delta` switch must be used to compensate. The `--ignore-offset` switch can also be used to make the tool ignore the Offset Time Original tag even if present (for instance, if it is wrong).
+There is no standard time zone tag in EXIF. Some cameras will set the __Offset Time Original__ tag to a time shift (something like "+02:00"), which, by default, is read by the tool in order to set a zone. If this tag is not present, the zone of the times in the images is assumed to be UTC ("+00:00"). In that case, if the times in the images are actually in local time, the `--delta-tz` option must be used to compensate. The `--ignore-offset` switch can also be used to make the tool ignore the Offset Time Original tag even if present (for instance, if it is wrong).
 
-For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta` switch must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the time shift must be set to *minus* 1 hour. However, if the Offset Time Original is present and set to "+01:00", `gpx2exif` will set the delta automatically (by default) to `-1h` .
+For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta-tz` option must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the time shift must be set to *minus* 1 hour. However, if the Offset Time Original is present and set to "+01:00", `gpx2exif` will set the delta automatically (by default) to `-1h`.
+
+#### Drift and time zone shifts
+
+ If both `--delta-tz` and `--delta` are present, they are added together to obtain the shift for conversion to UTC.
+ 
+ They are basically interchangeable except in the case when the `--update-time` switch is used: In that case, if both options are present, the times in the images will be updated only using the value of the `--delta` option. The reason is that it is assumed that the times in the images should be in local time, whereas the addition of `--delta-tz` and `--delta` result in a time in UTC: The `--delta-tz` sets the timezone and the `--delta` corrects the drift.
 
 ## Flickr image time
 
@@ -49,7 +55,7 @@ The time used for a Flickr image is the __Date Taken__ attribute from the Flickr
 
 ### Time zone
 
-There is no timezone for the __Date Taken__ attribute on Flickr and therefore the time is asssumed to be UTC (just like when the offset is missing from the EXIF tags for images on disk). Use the `--delta` switch to compensate (see above).
+There is no timezone for the __Date Taken__ attribute on Flickr and therefore the time is asssumed to be UTC (just like when the offset is missing from the EXIF tags for images on disk). Use the `--delta` or `-delta-tz` option to compensate (see above).
 
 ## Format for time shift and tolerance
 
@@ -96,12 +102,19 @@ The image subcommand allows to synch a GPX file with an image file or a folder o
 ~$ gpx2exif image --help
 Usage: gpx2exif image [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
 
-  Add GPS EXIF tags to local images based on a GPX fie
+  Add GPS EXIF tags to local images based on a GPX file
 
 Options:
   -d, --delta TEXT                Time shift to apply to the photo times to
                                   match the date in GPX (see documentation for
-                                  format). [default: no shift]
+                                  format). Multiple possible.[default: no
+                                  shift]
+
+  -d, --delta-tz TEXT             Time zone offset to apply to the photo times
+                                  to match the date in GPX (see documentation
+                                  for format). If present, assumes --ignore-
+                                  offset. [default: no shift (timezone of the
+                                  image if present)]
 
   -t, --tolerance TEXT            Tolerance if time of the photo is not inside
                                   the time range of the GPX track. (default:
@@ -124,6 +137,11 @@ Options:
                                   Flag to indicate that the images should not
                                   be udpated and only a KML will generated
 
+  -u, --update-time / --no-update-time
+                                  Flag to indicate that the times of the
+                                  photos should be updated according to the
+                                  delta.
+
   --kml_thumbnail_size INTEGER    Pixel size of the image popup in the KML
   --help                          Show this message and exit.
 ```
@@ -139,7 +157,14 @@ Usage: gpx2exif flickr [OPTIONS] GPX_FILE FLICKR_ALBUM_URL
 Options:
   -d, --delta TEXT                Time shift to apply to the photo times to
                                   match the date in GPX (see documentation for
-                                  format). [default: no shift]
+                                  format). Multiple possible.[default: no
+                                  shift]
+
+  -d, --delta-tz TEXT             Time zone offset to apply to the photo times
+                                  to match the date in GPX (see documentation
+                                  for format). If present, assumes --ignore-
+                                  offset. [default: no shift (timezone of the
+                                  image if present)]
 
   -t, --tolerance TEXT            Tolerance if time of the photo is not inside
                                   the time range of the GPX track. (default:

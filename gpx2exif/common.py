@@ -30,9 +30,9 @@ delta_tz_option = click.option(
     "--delta-tz",
     "delta_tz",
     help=(
-        "Time zone shift to apply to the photo times "
+        "Time zone offset to apply to the photo times "
         "to match the date in GPX (see documentation for format). "
-        "If present, assumes --ignore-offset."
+        "If present, assumes --ignore-offset. "
         "[default: no shift (timezone of the image if present)]"
     ),
     required=False,
@@ -152,9 +152,9 @@ def compute_pos(img_time, gpx_segments, tolerance):
     return None
 
 
-def _format_timedelta(td):
+def format_timedelta(td):
     if td < timedelta(0):
-        return "-" + _format_timedelta(-td)
+        return "-" + format_timedelta(-td)
     else:
         s = int(td.total_seconds())
         hours, remainder = divmod(s, 3600)
@@ -189,7 +189,7 @@ def process_deltas(delta, delta_tz):
 
 
 def _print_delta(delta, delta_type="Time"):
-    delta_s = _format_timedelta(delta)
+    delta_s = format_timedelta(delta)
     logger.info(colored(f"{delta_type} shift: {delta_s}", "green"))
 
 
