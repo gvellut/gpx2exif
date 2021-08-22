@@ -182,10 +182,12 @@ def process_deltas(delta, delta_tz):
         delta_tz = process_delta([delta_tz])
         _print_delta(delta_tz, "TZ time")
 
-        delta += delta_tz
-        _print_delta(delta, "Total time")
+        delta_total = delta + delta_tz
+        _print_delta(delta_total, "Total time")
+    else:
+        delta_total = delta
 
-    return delta, delta_tz
+    return delta, delta_tz, delta_total
 
 
 def _print_delta(delta, delta_type="Time"):

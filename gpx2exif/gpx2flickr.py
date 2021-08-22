@@ -225,7 +225,8 @@ def gpx2flickr(
     """ Add location information to Flickr images based on a GPX file """
 
     try:
-        delta, delta_tz = process_deltas(delta, delta_tz)
+        # tz no different from delta for flickr
+        _, _, delta_total = process_deltas(delta, delta_tz)
 
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
@@ -242,13 +243,13 @@ def gpx2flickr(
         logger.info("Synching Flickr Geo tags to GPX...")
         if not is_update_images:
             logger.warning("The images will not be updated with the positions!")
-        # TODO class flickr processor
+
         positions = synch_gps_flickr(
             flickr,
             user,
             flickr_album,
             gpx_segments,
-            delta,
+            delta_total,
             tolerance,
             is_clear,
             is_update_images,

@@ -222,7 +222,7 @@ def update_original_photo_time(exif_data, dt, delta_tz, is_ignore_offset):
 
     # if Time Offset present in original photo, the dt is a datetime with
     # timezone and strftime will print the local time part
-    # if not, it is in local time
+    # if not, it is in local time anyway
     dt_original = datetime.strftime(dt, dt_format)
     exif_data["Exif"][piexif.ExifIFD.DateTimeOriginal] = dt_original.encode("ascii")
 
@@ -342,7 +342,7 @@ def gpx2exif(
         if delta_tz:
             is_ignore_offset = True
 
-        delta, delta_tz = process_deltas(delta, delta_tz)
+        delta, delta_tz, delta_total = process_deltas(delta, delta_tz)
 
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
@@ -360,7 +360,7 @@ def gpx2exif(
         positions = synch_gps_exif(
             img_fileordirpath,
             gpx_segments,
-            delta,
+            delta_total,
             delta_tz,
             tolerance,
             is_ignore_offset,
