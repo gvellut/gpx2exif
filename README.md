@@ -110,7 +110,7 @@ Options:
                                   format). Multiple possible.[default: no
                                   shift]
 
-  -d, --delta-tz TEXT             Time zone offset to apply to the photo times
+  -z, --delta-tz TEXT             Time zone offset to apply to the photo times
                                   to match the date in GPX (see documentation
                                   for format). If present, assumes --ignore-
                                   offset. [default: no shift (timezone of the
@@ -160,7 +160,7 @@ Options:
                                   format). Multiple possible.[default: no
                                   shift]
 
-  -d, --delta-tz TEXT             Time zone offset to apply to the photo times
+  -z, --delta-tz TEXT             Time zone offset to apply to the photo times
                                   to match the date in GPX (see documentation
                                   for format). If present, assumes --ignore-
                                   offset. [default: no shift (timezone of the
