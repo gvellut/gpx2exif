@@ -26,7 +26,7 @@ delta_option = click.option(
 )
 
 delta_tz_option = click.option(
-    "-d",
+    "-z",
     "--delta-tz",
     "delta_tz",
     help=(
