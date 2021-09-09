@@ -105,45 +105,40 @@ Usage: gpx2exif image [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
   Add GPS EXIF tags to local images based on a GPX file
 
 Options:
-  -d, --delta TEXT                Time shift to apply to the photo times to
-                                  match the date in GPX (see documentation for
-                                  format). Multiple possible.[default: no
-                                  shift]
+  -d, --delta TEXT              Time shift to apply to the photo times to
+                                match the date in GPX (see documentation for
+                                format). Multiple possible.[default: no shift]
 
-  -z, --delta-tz TEXT             Time zone offset to apply to the photo times
-                                  to match the date in GPX (see documentation
-                                  for format). If present, assumes --ignore-
-                                  offset. [default: no shift (timezone of the
-                                  image if present)]
+  -z, --delta-tz TEXT           Time zone offset to apply to the photo times
+                                to match the date in GPX (see documentation
+                                for format). If present, assumes --ignore-
+                                offset. [default: no shift (timezone of the
+                                image if present)]
 
-  -t, --tolerance TEXT            Tolerance if time of the photo is not inside
-                                  the time range of the GPX track. (default:
-                                  10s)
+  -t, --tolerance TEXT          Tolerance if time of the photo is not inside
+                                the time range of the GPX track. (default:
+                                10s)
 
-  -o, --ignore-offset             Flag to indicate that the OffsetTimeOriginal
-                                  should not be used (time of images is
-                                  assumed UTC). Use --delta to compensate for
-                                  both timezone and drift.
+  -o, --ignore-offset           Flag to indicate that the OffsetTimeOriginal
+                                should not be used (time of images is assumed
+                                UTC). Use --delta to compensate for both
+                                timezone and drift.
 
-  -c, --clear                     Flag to indicate that the times of the
-                                  photos should be cleared if no position can
-                                  be computed.
+  -c, --clear                   Flag to indicate that the times of the photos
+                                should be cleared if no position can be
+                                computed.
 
-  -k, --kml TEXT                  Path for a KML output file with placemarks
-                                  for the photos (useful for checking the
-                                  delta)
+  -k, --kml TEXT                Path for a KML output file with placemarks for
+                                the photos (useful for checking the delta)
 
-  --update-images / --no-update-images
-                                  Flag to indicate that the images should not
-                                  be udpated and only a KML will generated
+  -n, --no-update-images        Flag to indicate that the images should not be
+                                udpated and only a KML will generated
 
-  -u, --update-time / --no-update-time
-                                  Flag to indicate that the times of the
-                                  photos should be updated according to the
-                                  delta.
+  -u, --update-time             Flag to indicate that the times of the photos
+                                should be updated according to the delta.
 
-  --kml_thumbnail_size INTEGER    Pixel size of the image popup in the KML
-  --help                          Show this message and exit.
+  --kml_thumbnail_size INTEGER  Pixel size of the image popup in the KML
+  --help                        Show this message and exit.
 ```
 
 ## flickr subcommand
@@ -155,42 +150,39 @@ Usage: gpx2exif flickr [OPTIONS] GPX_FILE FLICKR_ALBUM_URL
   Add location information to Flickr images based on a GPX file
 
 Options:
-  -d, --delta TEXT                Time shift to apply to the photo times to
-                                  match the date in GPX (see documentation for
-                                  format). Multiple possible.[default: no
-                                  shift]
+  -d, --delta TEXT              Time shift to apply to the photo times to
+                                match the date in GPX (see documentation for
+                                format). Multiple possible.[default: no shift]
 
-  -z, --delta-tz TEXT             Time zone offset to apply to the photo times
-                                  to match the date in GPX (see documentation
-                                  for format). If present, assumes --ignore-
-                                  offset. [default: no shift (timezone of the
-                                  image if present)]
+  -z, --delta-tz TEXT           Time zone offset to apply to the photo times
+                                to match the date in GPX (see documentation
+                                for format). If present, assumes --ignore-
+                                offset. [default: no shift (timezone of the
+                                image if present)]
 
-  -t, --tolerance TEXT            Tolerance if time of the photo is not inside
-                                  the time range of the GPX track. (default:
-                                  10s)
+  -t, --tolerance TEXT          Tolerance if time of the photo is not inside
+                                the time range of the GPX track. (default:
+                                10s)
 
-  -c, --clear                     Flag to indicate that the times of the
-                                  photos should be cleared if no position can
-                                  be computed.
+  -c, --clear                   Flag to indicate that the times of the photos
+                                should be cleared if no position can be
+                                computed.
 
-  -k, --kml TEXT                  Path for a KML output file with placemarks
-                                  for the photos (useful for checking the
-                                  delta)
+  -k, --kml TEXT                Path for a KML output file with placemarks for
+                                the photos (useful for checking the delta)
 
-  --update-images / --no-update-images
-                                  Flag to indicate that the images should not
-                                  be udpated and only a KML will generated
+  -n, --no-update-images        Flag to indicate that the images should not be
+                                udpated and only a KML will generated
 
-  --kml_thumbnail_size INTEGER    Pixel size of the image popup in the KML
-  --api_key TEXT                  Flickr API key  [required]
-  --api_secret TEXT               Flickr API secret  [required]
-  --config FILE                   Path to optional config file for the Flickr
-                                  API credentials [default :
-                                  /Users/guilhem/Library/Application
-                                  Support/gpx2exif/flickr_api_credentials.txt]
+  --kml_thumbnail_size INTEGER  Pixel size of the image popup in the KML
+  --api_key TEXT                Flickr API key  [required]
+  --api_secret TEXT             Flickr API secret  [required]
+  --config FILE                 Path to optional config file for the Flickr
+                                API credentials [default :
+                                /Users/guilhem/Library/Application
+                                Support/gpx2exif/flickr_api_credentials.txt]
 
-  --help                          Show this message and exit.
+  --help                        Show this message and exit.
 ```
 
 ### Flickr API permision

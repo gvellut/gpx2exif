@@ -70,10 +70,19 @@ kml_thumbnail_size_option = click.option(
     required=False,
 )
 
+
+def reverse_flag(_, value):
+    # for negative flags that default to False
+    return not value
+
+
 update_images_option = click.option(
-    "--update-images/--no-update-images",
+    "-n",
+    "--no-update-images",
     "is_update_images",
-    default=True,
+    is_flag=True,
+    default=False,
+    callback=reverse_flag,
     help=(
         "Flag to indicate that the images should not be udpated and only a KML will "
         "generated"
@@ -95,8 +104,9 @@ clear_option = click.option(
 
 update_time_option = click.option(
     "-u",
-    "--update-time/--no-update-time",
+    "--update-time",
     "is_update_time",
+    is_flag=True,
     default=False,
     help=(
         "Flag to indicate that the times of the photos should be updated according to "
