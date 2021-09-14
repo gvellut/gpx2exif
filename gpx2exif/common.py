@@ -174,7 +174,6 @@ def format_timedelta(td):
 
 def process_delta(deltas):
     if deltas:
-        logger.info("Parsing time shift...")
         delta = timedelta(0)
         for delta_s in deltas:
             delta += parse_timedelta(delta_s)
@@ -184,8 +183,10 @@ def process_delta(deltas):
     return delta
 
 
-def process_deltas(delta, delta_tz):
-    delta = process_delta(delta)
+def process_deltas(deltas, delta_tz):
+    logger.info("Parsing time shift...")
+
+    delta = process_delta(deltas)
     _print_delta(delta)
 
     if delta_tz:
@@ -195,6 +196,7 @@ def process_deltas(delta, delta_tz):
         delta_total = delta + delta_tz
         _print_delta(delta_total, "Total time")
     else:
+        delta_tz = None
         delta_total = delta
 
     return delta, delta_tz, delta_total
