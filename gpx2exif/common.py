@@ -3,11 +3,11 @@ import logging
 import re
 
 import click
+from colorama import Fore
 import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import simplekml
-from termcolor import colored
 
 logger = logging.getLogger(__package__)
 
@@ -204,7 +204,7 @@ def process_deltas(deltas, delta_tz):
 
 def _print_delta(delta, delta_type="Time"):
     delta_s = format_timedelta(delta)
-    logger.info(colored(f"{delta_type} shift: {delta_s}", "green"))
+    logger.info(colored(f"{delta_type} shift: {delta_s}", Fore.GREEN))
 
 
 def process_tolerance(tolerance):
@@ -214,7 +214,7 @@ def process_tolerance(tolerance):
         tolerance = timedelta(seconds=abs(parse_timedelta(tolerance).total_seconds()))
     else:
         tolerance = timedelta(seconds=10)
-    logger.info(colored(f"Tolerance: {int(tolerance.total_seconds())}s", "green"))
+    logger.info(colored(f"Tolerance: {int(tolerance.total_seconds())}s", Fore.GREEN))
     return tolerance
 
 
@@ -301,3 +301,7 @@ def write_kml(positions, kml_path, kml_thumbnail_size, image_src, image_name):
         kml.save(kml_path)
     except Exception:
         logger.exception(f"Unable to save KML to {kml_path}")
+
+
+def colored(s, color):
+    return f"{color}{s}{Fore.RESET}"

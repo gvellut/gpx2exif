@@ -2,7 +2,7 @@ import logging
 import sys
 
 import click
-import colorama
+from colorama import Fore, Style
 
 from .gpx2exif import gpx2exif
 from .gpx2flickr import gpx2flickr
@@ -10,7 +10,7 @@ from .gpx2flickr import gpx2flickr
 logger = logging.getLogger(__package__)
 
 # specify colors for different logging levels
-LOG_COLORS = {logging.ERROR: colorama.Fore.RED, logging.WARNING: colorama.Fore.YELLOW}
+LOG_COLORS = {logging.ERROR: Fore.RED, logging.WARNING: Fore.YELLOW}
 
 
 class ColorFormatter(logging.Formatter):
@@ -19,7 +19,7 @@ class ColorFormatter(logging.Formatter):
             record.msg = "{color_begin}{message}{color_end}".format(
                 message=record.msg,
                 color_begin=LOG_COLORS[record.levelno],
-                color_end=colorama.Style.RESET_ALL,
+                color_end=Style.RESET_ALL,
             )
         return super().format(record, *args, **kwargs)
 
