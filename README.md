@@ -10,7 +10,7 @@ I also had some GPX recordings corresponding to Flickr images that I had uploade
 
 # Install
 
-The tool requires Python 3.6+.
+The tool requires Python 3.7+ (since gpx2exif version 10; previous versions run on Python 3.6 as well).
 
 To install, launch :
 
