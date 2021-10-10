@@ -4,6 +4,7 @@ import re
 
 import click
 from colorama import Fore
+import dateutil.parser
 import gpxpy
 import gpxpy.gpx
 import pandas as pd
@@ -183,26 +184,7 @@ def process_delta(deltas):
     return delta
 
 
-def process_deltas(deltas, delta_tz):
-    logger.info("Parsing time shift...")
-
-    delta = process_delta(deltas)
-    _print_delta(delta)
-
-    if delta_tz:
-        delta_tz = process_delta([delta_tz])
-        _print_delta(delta_tz, "TZ time")
-
-        delta_total = delta + delta_tz
-        _print_delta(delta_total, "Total time")
-    else:
-        delta_tz = None
-        delta_total = delta
-
-    return delta, delta_tz, delta_total
-
-
-def _print_delta(delta, delta_type="Time"):
+def print_delta(delta, delta_type):
     delta_s = format_timedelta(delta)
     logger.info(colored(f"{delta_type} shift: {delta_s}", Fore.GREEN))
 
@@ -250,6 +232,33 @@ def read_gpx(gpx_filepath):
 
 
 def parse_timedelta(time_str):
+    # if starts with -: will be the explicit delta
+    if "-" in time_str and not time_str.startswith("-"):
+        # time in the form of Tref-Texif
+        # with Time in iso format (with days or only time)
+        tref_str, timage_str = time_str.split("-")
+        tref_str = tref_str.strip()
+        timage_str = timage_str.strip()
+        try:
+            # try full date + time
+            tref = dateutil.parser.isoparse(tref_str)
+            timage = dateutil.parser.isoparse(timage_str)
+        except Exception:
+            try:
+                # try only time
+                # use dateutil parser in case TZ
+                # use dummy identical date
+                dummy_date = "2021-10-10"
+                tref = dateutil.parser.isoparse(f"{dummy_date} {tref_str}")
+                timage = dateutil.parser.isoparse(f"{dummy_date} {timage_str}")
+            except Exception:
+                raise ValueError(
+                    f"'{time_str}' is not a valid time difference " "expression!"
+                )
+
+        delta = tref - timage
+        return delta
+
     regex = re.compile(
         r"(?P<negative>-)?(?:(?P<hours>\d+?)h)?"
         r"(?:(?P<minutes>\d+?)m)?(?:(?P<seconds>\d+?)s)?"

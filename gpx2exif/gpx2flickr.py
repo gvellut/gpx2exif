@@ -17,7 +17,8 @@ from .common import (
     delta_tz_option,
     kml_option,
     kml_thumbnail_size_option,
-    process_deltas,
+    print_delta,
+    process_delta,
     process_gpx,
     process_kml,
     process_tolerance,
@@ -49,7 +50,9 @@ def parse_album_url(ctx, param, value):
 def _get_page_of_images_in_album(flickr, album_id, page, acc, output=False):
     album_info = Addict(
         flickr.photosets.getPhotos(
-            photoset_id=album_id, page=page, extras="url_m,date_taken,geo"
+            photoset_id=album_id,
+            page=page,
+            extras="url_m,date_taken,geo",
         )
     ).photoset
 
@@ -70,7 +73,11 @@ def get_images_in_album(flickr, album):
     page = 1
     while True:
         album_info = _get_page_of_images_in_album(
-            flickr, album.album_id, page, flickr_images, output=(page == 1),
+            flickr,
+            album.album_id,
+            page,
+            flickr_images,
+            output=(page == 1),
         )
 
         if page >= album_info.pages:
@@ -92,7 +99,7 @@ def set_flickr_location(flickr, image, pos):
 
 
 def process_image(
-    flickr, image, user, gpx_segments, delta, tolerance, is_clear, is_update_images,
+    flickr, image, user, gpx_segments, delta, tolerance, is_clear, is_update_images
 ):
     time_original = dateutil.parser.isoparse(image.datetaken)
     time_original = time_original.replace(tzinfo=timezone.utc)
@@ -176,9 +183,7 @@ CONFIG_FILE_HELP = (
     metavar="GPX_FILE",
     type=click.Path(exists=True, resolve_path=True, dir_okay=False),
 )
-@click.argument(
-    "flickr_album", metavar="FLICKR_ALBUM_URL", callback=parse_album_url,
-)
+@click.argument("flickr_album", metavar="FLICKR_ALBUM_URL", callback=parse_album_url)
 @delta_option
 @delta_tz_option
 @tolerance_option
@@ -222,11 +227,21 @@ def gpx2flickr(
     api_key,
     api_secret,
 ):
-    """ Add location information to Flickr images based on a GPX file """
+    """Add location information to Flickr images based on a GPX file"""
 
     try:
-        # tz no different from delta for flickr
-        _, _, delta_total = process_deltas(delta, delta_tz)
+        logger.info("Parsing time shift...")
+        delta = process_delta(delta)
+        if delta_tz:
+            delta_tz = process_delta([delta_tz])
+            delta_total = delta + delta_tz
+        else:
+            delta_tz = None
+            delta_total = delta
+
+        # tz delta no different from delta for flickr (update time not supported)
+        # so do not print intermediate time deltas like for images
+        print_delta(delta, "Time")
 
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
@@ -235,7 +250,7 @@ def gpx2flickr(
 
         logger.info("Logging in to Flickr...")
         flickr = create_flickr_api(
-            api_key, api_secret, token_cache_location=token_cache_location,
+            api_key, api_secret, token_cache_location=token_cache_location
         )
 
         user = Addict(flickr.urls.lookupUser(url=flickr_album.url)).user

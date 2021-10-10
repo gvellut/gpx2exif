@@ -16,7 +16,8 @@ from .common import (
     format_timedelta,
     kml_option,
     kml_thumbnail_size_option,
-    process_deltas,
+    print_delta,
+    process_delta,
     process_gpx,
     process_kml,
     process_tolerance,
@@ -337,12 +338,24 @@ def gpx2exif(
     is_update_images,
     is_update_time,
 ):
-    """ Add GPS EXIF tags to local images based on a GPX file """
+    """Add GPS EXIF tags to local images based on a GPX file"""
     try:
         if delta_tz:
             is_ignore_offset = True
 
-        delta, delta_tz, delta_total = process_deltas(delta, delta_tz)
+        logger.info("Parsing time shift...")
+        delta = process_delta(delta)
+        print_delta(delta, "Time")
+
+        if delta_tz:
+            delta_tz = process_delta([delta_tz])
+            print_delta(delta_tz, "TZ time")
+
+            delta_total = delta + delta_tz
+            print_delta(delta_total, "Total time")
+        else:
+            delta_tz = None
+            delta_total = delta
 
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
