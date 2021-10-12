@@ -108,13 +108,30 @@ update_time_option = click.option(
     "--update-time",
     "is_update_time",
     is_flag=True,
-    default=False,
     help=(
         "Flag to indicate that the times of the photos should be updated according to "
         "the delta."
     ),
     required=False,
 )
+
+ask_option = click.option(
+    "-a",
+    "--ask",
+    "is_confirm",
+    is_flag=True,
+    help=(
+        "Flag to indicate a confirmation prompt will be displayed before photos "
+        "are updated."
+    ),
+    required=False,
+)
+
+
+class UpdateConfirmationAbortedException(Exception):
+    """Exception raised when confirmation is denied by user (with the --ask option)"""
+
+    pass
 
 
 def compute_pos(img_time, gpx_segments, tolerance):

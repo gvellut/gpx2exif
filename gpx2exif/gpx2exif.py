@@ -9,6 +9,7 @@ import click
 import piexif
 
 from .common import (
+    ask_option,
     clear_option,
     compute_pos,
     delta_option,
@@ -24,6 +25,7 @@ from .common import (
     tolerance_option,
     update_images_option,
     update_time_option,
+    UpdateConfirmationAbortedException,
 )
 
 logger = logging.getLogger(__package__)
@@ -322,6 +324,7 @@ def synch_gps_exif(
 @kml_option
 @update_images_option
 @update_time_option
+@ask_option
 @kml_thumbnail_size_option
 @click.pass_context
 def gpx2exif(
@@ -337,6 +340,7 @@ def gpx2exif(
     kml_thumbnail_size,
     is_update_images,
     is_update_time,
+    is_confirm,
 ):
     """Add GPS EXIF tags to local images based on a GPX file"""
     try:
@@ -365,10 +369,14 @@ def gpx2exif(
         logger.info("Synching EXIF GPS to GPX...")
         if not is_update_images:
             logger.warning("The images will not be updated!")
+        else:
+            if is_update_time:
+                fdt = format_timedelta(delta)
+                logger.warning(f"The times in the images will be shifted: {fdt}!")
 
-        if is_update_images and is_update_time:
-            fdt = format_timedelta(delta)
-            logger.warning(f"The times in the images will be shifted: {fdt}!")
+            if is_confirm:
+                if not click.confirm("The images will be updated. Confirm?"):
+                    raise UpdateConfirmationAbortedException()
 
         positions = synch_gps_exif(
             img_fileordirpath,
@@ -392,6 +400,10 @@ def gpx2exif(
         process_kml(
             positions, kml_output_path, kml_thumbnail_size, image_src, image_name
         )
+
+    except UpdateConfirmationAbortedException:
+        logger.error("Update aborted by user!")
+        sys.exit(0)
 
     except Exception as ex:
         logger.error("*** An unrecoverable error occured ***")
