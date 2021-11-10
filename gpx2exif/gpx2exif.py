@@ -295,6 +295,43 @@ def synch_gps_exif(
         return positions
 
 
+def image_src(x):
+    # issue on Windows if backslash left as is + GE needs a starting /
+    if os.name == "nt":
+        x = "/" + x.replace("\\", "/")
+    return f"file://{x}"
+
+
+image_name = os.path.basename
+
+
+def image_style(x):
+    exif_data = piexif.load(x)
+    if piexif.ImageIFD.Orientation not in exif_data["0th"]:
+        return ""
+
+    orientation = exif_data["0th"][piexif.ImageIFD.Orientation]
+    if orientation == 3:
+        angle = 180
+        origin = "center"
+        translate = ""
+    elif orientation == 6:
+        angle = 90
+        origin = "left bottom"
+        translate = "translateY(-100%)"
+    elif orientation == 8:
+        angle = -90
+        origin = "top right;"
+        translate = "translateX(-100%)"
+    else:
+        return ""
+
+    return (
+        f"-webkit-transform: {translate} rotate({angle}deg); "
+        f"-webkit-transform-origin: {origin};"
+    )
+
+
 @click.argument(
     "gpx_filepath",
     metavar="GPX_FILE",
@@ -390,15 +427,13 @@ def gpx2exif(
             is_update_time,
         )
 
-        def image_src(x):
-            # issue on Windows if backslash left as is + GE needs a starting /
-            if os.name == "nt":
-                x = "/" + x.replace("\\", "/")
-            return f"file://{x}"
-
-        image_name = os.path.basename
         process_kml(
-            positions, kml_output_path, kml_thumbnail_size, image_src, image_name
+            positions,
+            kml_output_path,
+            kml_thumbnail_size,
+            image_src,
+            image_name,
+            image_style,
         )
 
     except UpdateConfirmationAbortedException:

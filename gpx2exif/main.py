@@ -48,7 +48,7 @@ def setup_logging(is_debug):
 )
 @click.pass_context
 def main(ctx, is_debug):
-    """ Add location information to images on disk or on Flickr based on a GPX file """
+    """Add location information to images on disk or on Flickr based on a GPX file"""
     setup_logging(is_debug)
     # special attribute of context
     ctx.obj = {"DEBUG": is_debug}

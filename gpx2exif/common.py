@@ -301,25 +301,42 @@ def parse_timedelta(time_str):
     return timedelta(**time_params)
 
 
-def process_kml(positions, kml_output_path, kml_thumbnail_size, image_src, image_name):
+def process_kml(
+    positions,
+    kml_output_path,
+    kml_thumbnail_size,
+    image_src,
+    image_name,
+    image_style=None,
+):
     if kml_output_path:
         logger.info("Writing KML...")
         if len(positions) > 0:
             write_kml(
-                positions, kml_output_path, kml_thumbnail_size, image_src, image_name
+                positions,
+                kml_output_path,
+                kml_thumbnail_size,
+                image_src,
+                image_name,
+                image_style,
             )
         else:
             logger.warning("No KML output (no georeferenced photos)!")
 
 
-def write_kml(positions, kml_path, kml_thumbnail_size, image_src, image_name):
+def write_kml(
+    positions, kml_path, kml_thumbnail_size, image_src, image_name, image_style=None
+):
     kml = simplekml.Kml()
     sharedstyle = simplekml.Style()
     sharedstyle.balloonstyle.text = "$[description]"
     for latlon, image in positions:
+        css_style = ""
+        if image_style:
+            css_style = f'style="{image_style(image)}"'
         desc = f"""<![CDATA[
- <img src="{image_src(image)}" width="{kml_thumbnail_size}" /><br/><br/>
- {image_name(image)}<br/>
+{image_name(image)}</br></br>
+<img src="{image_src(image)}" width="{kml_thumbnail_size}" {css_style} />
  ]]>"""
         pnt = kml.newpoint(description=desc, coords=[latlon[::-1]])
         pnt.style = sharedstyle
