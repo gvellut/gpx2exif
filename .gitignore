@@ -11,3 +11,8 @@ __pycache__
 __test/
 *.kml
 *.jpg
+*.pyd
+*.pyi
+main.build
+main.dist
+*.spec

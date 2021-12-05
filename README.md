@@ -240,3 +240,8 @@ gpx2exif flickr geopaparazzi_20200315_183754.gpx https://www.flickr.com/photos/o
 ```
 
 (the API key and secret come from a config file and do not need to be passed to the command)
+
+# TODO 
+
+- Github Action for publishing + generate exe for Windows
+- pyinstaller.exe .\pyinstaller_bootstrap\main.py -p . --noconfirm -F -n gpx2exif
