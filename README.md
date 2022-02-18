@@ -245,3 +245,4 @@ gpx2exif flickr geopaparazzi_20200315_183754.gpx https://www.flickr.com/photos/o
 
 - Github Action for publishing + generate exe for Windows
 - pyinstaller.exe .\pyinstaller_bootstrap\main.py -p . --noconfirm -F -n gpx2exif
+- way to easily reverse time change written to image (output command that will work)

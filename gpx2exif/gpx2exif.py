@@ -4,6 +4,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+import time
 
 import click
 import piexif
@@ -102,7 +103,26 @@ def get_gps_ifd(lat, lon, altitude=None):
 
 def flush_exif(file_path_s, exif_data):
     exif_bytes = piexif.dump(exif_data)
-    piexif.insert(exif_bytes, file_path_s)
+    try_iter = 1
+    while True:
+        try:
+            piexif.insert(exif_bytes, file_path_s)
+            break
+        except OSError as ex:
+            # this error happens randomly on Windows very infrequently
+            # 100's images will process correctly then 1 will crash
+            # with [Errno 22] Invalid argument
+            # maybe some other OS process (indexing ?) is accessing the same file
+            if ex.errno == 22:
+                logger.warning("Errno 22 !")
+                # try again
+                try_iter += 1
+                if try_iter > 3:
+                    raise
+                time.sleep(1)
+                logger.warning("Retry...")
+            else:
+                raise
 
 
 def save_exif_with_gps(exif_data, gps_ifd):
