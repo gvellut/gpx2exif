@@ -75,6 +75,16 @@ The time shift can also be negative. For example:
 -23m
 ```
 
+### Time difference
+
+It is also possible to indicate the time shift as a difference between the reference time (of the phone or GPS recorder) and the time of the camera:
+
+```
+16:42:05-16:48:59
+```
+
+It can be useful when taking a picture of the clock on the phone / GPS recorder. Then the reference time can be read from the photo, while the camera time can be obtained from the EXIF of the photo file. On top of that, the `-z` option should be set to indicate the timezone (since the reference would be in local time). If the camera drifts a lot (it is the case on one of my cameras), this process can be done after every photo session to keep the time shift accurate.
+
 # Options
 
 To get some help about the arguments to the command, just launch with the --help option:
@@ -136,6 +146,9 @@ Options:
 
   -u, --update-time             Flag to indicate that the times of the photos
                                 should be updated according to the delta.
+
+  -a, --ask                     Flag to indicate a confirmation prompt will be
+                                displayed before photos are updated.
 
   --kml_thumbnail_size INTEGER  Pixel size of the image popup in the KML
   --help                        Show this message and exit.
