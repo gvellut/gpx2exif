@@ -72,7 +72,7 @@ kml_thumbnail_size_option = click.option(
 )
 
 
-def reverse_flag(_, value):
+def reverse_flag(_a, _b, value):
     # for negative flags that default to False
     return not value
 

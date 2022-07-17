@@ -1,4 +1,4 @@
-click~=7.1.0
+click~=8.0
 click-config-file~=0.6.0
 colorama~=0.4.0
 addict~=2.4.0
