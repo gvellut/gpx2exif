@@ -321,7 +321,7 @@ def process_kml(
                 image_style,
             )
         else:
-            logger.warning("No KML output (no georeferenced photos)!")
+            logger.error("No KML output (no georeferenced photos)!")
 
 
 def write_kml(

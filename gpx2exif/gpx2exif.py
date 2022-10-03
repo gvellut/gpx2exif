@@ -113,16 +113,13 @@ def flush_exif(file_path_s, exif_data):
             # 100's images will process correctly then 1 will crash
             # with [Errno 22] Invalid argument
             # maybe some other OS process (indexing ?) is accessing the same file
-            if ex.errno == 22:
-                logger.warning("Errno 22 !")
-                # try again
-                try_iter += 1
-                if try_iter > 3:
-                    raise
-                time.sleep(1)
-                logger.warning("Retry...")
-            else:
+            logger.warning(f"Errno {ex.errno} !")
+            # try again
+            try_iter += 1
+            if try_iter > 3:
                 raise
+            time.sleep(1)
+            logger.warning("Retry...")
 
 
 def save_exif_with_gps(exif_data, gps_ifd):
