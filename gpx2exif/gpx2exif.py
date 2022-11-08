@@ -457,8 +457,23 @@ def gpx2exif(
         logger.error("Update aborted by user!")
         sys.exit(0)
 
-    except Exception as ex:
-        logger.error("*** An unrecoverable error occured ***")
+    except (KeyboardInterrupt, click.exceptions.Abort) as ex:
+        msg = "*** Aborted by user ***"
+        if isinstance(ex, click.exceptions.Abort):
+            # error is when confirming: logger is on same line so add newline
+            msg = "\n" + msg
+        logger.error(msg)
         lf = logger.error if not ctx.obj["DEBUG"] else logger.exception
-        lf(str(ex))
+        err_msg = str(ex)
+        if err_msg:
+            lf(err_msg)
+        sys.exit(1)
+
+    except Exception as ex:
+        msg = "*** An unrecoverable error occured ***"
+        logger.error(msg)
+        lf = logger.error if not ctx.obj["DEBUG"] else logger.exception
+        err_msg = str(ex)
+        if err_msg:
+            lf(err_msg)
         sys.exit(1)
