@@ -178,6 +178,10 @@ CONFIG_FILE_HELP = (
 
 
 # TODO support for single image ?
+@click.command(
+    name="flickr",
+    help="Add location information to Flickr images based on a GPX file",
+)
 @click.argument(
     "gpx_filepath",
     metavar="GPX_FILE",
@@ -227,8 +231,6 @@ def gpx2flickr(
     api_key,
     api_secret,
 ):
-    """Add location information to Flickr images based on a GPX file"""
-
     try:
         logger.info("Parsing time shift...")
         delta = process_delta(delta)

@@ -349,6 +349,10 @@ def image_style(x):
     )
 
 
+@click.command(
+    name="image",
+    help="Add GPS EXIF tags to local images based on a GPX file",
+)
 @click.argument(
     "gpx_filepath",
     metavar="GPX_FILE",
@@ -396,7 +400,6 @@ def gpx2exif(
     is_update_time,
     is_confirm,
 ):
-    """Add GPS EXIF tags to local images based on a GPX file"""
     try:
         if delta_tz:
             is_ignore_offset = True

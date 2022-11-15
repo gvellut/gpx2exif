@@ -54,8 +54,8 @@ def main(ctx, is_debug):
     ctx.obj = {"DEBUG": is_debug}
 
 
-gpx2exif = main.command("image")(gpx2exif)
-gpx2flickr = main.command("flickr")(gpx2flickr)
+main.add_command(gpx2exif)
+main.add_command(gpx2flickr)
 
 if __name__ == "__main__":
     main()
