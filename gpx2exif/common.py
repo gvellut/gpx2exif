@@ -140,6 +140,10 @@ def compute_pos(img_time, gpx_segments, tolerance):
     for df in gpx_segments:
         if img_time in df.index:
             gps = df.loc[img_time]
+            if isinstance(gps, pd.core.frame.DataFrame):
+                gps = gps.iloc[0] # Only consider one timestamp entry if there are duplicates
+            assert isinstance(gps, pd.core.series.Series)
+
             return gps["lat"], gps["lon"]
 
         # searchsorted returns the index for insertion to keep the
