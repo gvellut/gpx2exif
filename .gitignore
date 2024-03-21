@@ -17,3 +17,4 @@ main.build
 main.dist
 *.spec
 /temp
+.DS_Store

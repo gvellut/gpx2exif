@@ -141,7 +141,8 @@ def compute_pos(img_time, gpx_segments, tolerance):
         if img_time in df.index:
             gps = df.loc[img_time]
             if isinstance(gps, pd.core.frame.DataFrame):
-                gps = gps.iloc[0] # Only consider one timestamp entry if there are duplicates
+                # Only consider one timestamp entry if there are duplicates
+                gps = gps.iloc[0]
             assert isinstance(gps, pd.core.series.Series)
 
             return gps["lat"], gps["lon"]
@@ -298,7 +299,7 @@ def parse_timedelta(time_str):
     else:
         mult = 1
 
-    for (name, param) in parts.items():
+    for name, param in parts.items():
         if param:
             time_params[name] = mult * int(param)
 
@@ -339,7 +340,7 @@ def write_kml(
         if image_style:
             css_style = f'style="{image_style(image)}"'
         desc = f"""<![CDATA[
-{image_name(image)}</br></br>
+{image_name(image)}<br/><br/>
 <img src="{image_src(image)}" width="{kml_thumbnail_size}" {css_style} />
  ]]>"""
         pnt = kml.newpoint(description=desc, coords=[latlon[::-1]])
