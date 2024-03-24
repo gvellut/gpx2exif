@@ -18,3 +18,5 @@ main.dist
 *.spec
 /temp
 .DS_Store
+/scripts/vision.json
+/.env
