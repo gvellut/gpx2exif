@@ -4,7 +4,7 @@ Simple command-line tool to add GPS info from a GPX file to EXIF tags in local i
 
 # Motivation
 
-I use [Geopaparazzi](https://www.osgeo.org/projects/geopaparazzi/) on my Android phone to log GPS positions during a walk or hike. The app can export into GPX format, which gives the itinerary, as well as the times for my positions at a relatively high temporal resolution. This is useful for making maps or writing a guide after the fact. I also wanted to make it easier to know the location of the photos taken during the walk and have them show up on the Flickr map. Since my camera doesn't have any GPS logging equipment, I made this tool in order to add the GPS information to the photo EXIF tags based on the GPX tracking points. 
+I use [GPS Logger](http://www.basicairdata.eu/projects/android/android-gps-logger/) on my Android phone to log GPS positions during a walk or hike. The app can export into GPX format, which gives the itinerary, as well as the times for my positions at a relatively high temporal resolution. This is useful for making maps or writing a guide after the fact. I also wanted to make it easier to know the location of the photos taken during the walk and have them show up on the Flickr map. Since my camera doesn't have any GPS logging equipment, I made this tool in order to add the GPS information to the photo EXIF tags based on the GPX tracking points.
 
 I also had some GPX recordings corresponding to Flickr images that I had uploaded before I made this tool, so I have also added a way to set the location of existing Flickr images based on a GPX file.
 
@@ -28,7 +28,6 @@ In the tool, the time in an image is first shifted using the value for the `--de
 
 There is no switch to shift the time for the GPX file like there is for images: The GPX is assumed to be the reference.
 
-
 ## EXIF image time
 
 ### Time EXIF tag
@@ -43,9 +42,9 @@ For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 duri
 
 #### Drift and time zone shifts
 
- If both `--delta-tz` and `--delta` are present, they are added together to obtain the shift for conversion to UTC.
+If both `--delta-tz` and `--delta` are present, they are added together to obtain the shift for conversion to UTC.
  
- They are basically interchangeable except in the case when the `--update-time` switch is used: In that case, if both options are present, the times in the images will be updated only using the value of the `--delta` option. The reason is that it is assumed that the times in the images should be in local time, whereas the addition of `--delta-tz` and `--delta` result in a time in UTC: The `--delta-tz` sets the timezone and the `--delta` corrects the drift.
+They are basically interchangeable except in the case when the `--update-time` switch is used: In that case, if both options are present, the times in the images will be updated only using the value of the `--delta` option. The reason is that it is assumed that the times in the images should be in local time, whereas the addition of `--delta-tz` and `--delta` result in a time in UTC: The `--delta-tz` sets the timezone and the `--delta` corrects the drift.
 
 ## Flickr image time
 
@@ -67,7 +66,7 @@ The time shift (`--delta` switch) and tolerance (`--tolerance` switch) are time 
 
 It is possible to specify only seconds (s) or minutes (m) or hours (h) or any combination but the order (h then m then s) must be kept. No space is allowed.
 
-The `--delta` switch can be present multiple times. For example, one to set the time zone and that will not change (or very infrequently, like on DST switch days) between runs of `gpx2exif` and one set to the time drift of the camera, which can change often (additional 5 to 10 seconds of drift every session with my Fujifilm camera). `gpx2exif` will add the two together to compute a single delta for the run.
+The `--delta` switch can be present multiple times if needed.
 
 The time shift can also be negative. For example:
 
@@ -84,6 +83,8 @@ It is also possible to indicate the time shift as a difference between the refer
 ```
 
 It can be useful when taking a picture of the clock on the phone / GPS recorder. Then the reference time can be read from the photo, while the camera time can be obtained from the EXIF of the photo file. On top of that, the `-z` option should be set to indicate the timezone (since the reference would be in local time). If the camera drifts a lot (it is the case on one of my cameras), this process can be done after every photo session to keep the time shift accurate.
+
+To automate this workflow, there is an example script in the `scripts` folder: It uses [GCP Cloud Vision](https://cloud.google.com/vision/docs/ocr) to read the time from a photo of the phone clock and outputs a time shift difference in the format expected by `gpx2exif`. If you use it, you need to setup a GCP project and enable the Cloud Vision API on your side, as well as configure the GCP project for the script (for example, through an env var `CLOUDSDK_CORE_PROJECT`). It may also not work depending on the phone clock (I use a Samsung phone).
 
 # Options
 
