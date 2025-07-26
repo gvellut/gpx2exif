@@ -16,7 +16,7 @@ LOG_COLORS = {logging.ERROR: Fore.RED, logging.WARNING: Fore.YELLOW}
 class ColorFormatter(logging.Formatter):
     def format(self, record, *args, **kwargs):
         if record.levelno in LOG_COLORS:
-            record.msg = "{color_begin}{message}{color_end}".format(
+            record.msg = "{color_begin}{message}{color_end}".format(  # noqa: UP032
                 message=record.msg,
                 color_begin=LOG_COLORS[record.levelno],
                 color_end=Style.RESET_ALL,

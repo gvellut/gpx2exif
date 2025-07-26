@@ -20,3 +20,4 @@ main.dist
 .DS_Store
 /scripts/vision.json
 /.env
+/.ruff_cache

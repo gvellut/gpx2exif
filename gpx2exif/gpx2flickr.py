@@ -58,8 +58,7 @@ def _get_page_of_images_in_album(flickr, album_id, page, acc, output=False):
 
     if output:
         logger.info(
-            f"Processing album '{album_info.title}' with {album_info.total} "
-            "photos..."
+            f"Processing album '{album_info.title}' with {album_info.total} photos..."
         )
 
     acc.extend(album_info.photo)

@@ -1,26 +1,26 @@
 export PYTHONPATH=`pwd`/..
 
 top_photo_folder="/Volumes/CrucialX8/photos"
-folder="20240509_puvat"
-gpx="/Users/guilhem/Library/CloudStorage/GoogleDrive-guilhem.vellut@gmail.com/My Drive/___gpx/20240509-091242.gpx"
+folder="20250723_glaisins"
+gpx="/Users/guilhem/Library/CloudStorage/GoogleDrive-guilhem.vellut@gmail.com/My Drive/___gpx/20250723-102837.gpx"
 
-d_tz95="19:07:29-19:12:24"
+d_tz95="16:57:12-17:10:33"
 d_rx100="16:18:56-17:15:03"
-d_xs10="19:06:57-19:07:44"
+d_xs20="16:56:59-16:56:12"
 
 f_tz95=1
 f_rx100=0
-f_xs10=1
+f_xs20=1
 
 folder_tz95=1
 folder_rx100=1
-folder_xs10=1
+folder_xs20=1
 
 tz="-2h"
 
 update=1
 
-cmd="python"
+cmd="uv run python"
 params="-m gpx2exif.main image --delta-tz $tz --clear --ignore-offset --update-time --kml_thumbnail_size 350 --ask \"$gpx\""
 if [[ $update -eq 0 ]];
 then
@@ -63,18 +63,18 @@ then
 fi
 
 
-if [ $f_xs10 -eq 1 ]
+if [ $f_xs20 -eq 1 ]
 then
-    if [ $folder_xs10 -ne 0 ]
+    if [ $folder_xs20 -ne 0 ]
     then
-        p_folder="$base_folder/xs10"
+        p_folder="$base_folder/xs20"
     else
         p_folder="$base_folder"
     fi
-    params_xs10="$params $p_folder -d $d_xs10 --kml ../temp/photos_${folder}_xs10.kml"
-    echo "$cmd $params_xs10"
+    params_xs20="$params $p_folder -d $d_xs20 --kml ../temp/photos_${folder}_xs20.kml"
+    echo "$cmd $params_xs20"
 
-    eval "$cmd $params_xs10"
+    eval "$cmd $params_xs20"
 
     echo -e "\n===============\n"
 fi

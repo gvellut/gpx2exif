@@ -227,13 +227,13 @@ def process_gpx(gpx_filepath):
     gpx_segments = read_gpx(gpx_filepath)
     logger.info(
         f"GPX time range: {gpx_segments[0].iloc[0].name} => "
-        f"{gpx_segments[-1].iloc[0-1].name}"
+        f"{gpx_segments[-1].iloc[0 - 1].name}"
     )
     return gpx_segments
 
 
 def read_gpx(gpx_filepath):
-    with open(gpx_filepath, "r") as gpx_file:
+    with open(gpx_filepath) as gpx_file:
         gpx = gpxpy.parse(gpx_file)
 
     df_segments = []
@@ -273,10 +273,10 @@ def parse_timedelta(time_str):
                 dummy_date = "2021-10-10"
                 tref = dateutil.parser.isoparse(f"{dummy_date} {tref_str}")
                 timage = dateutil.parser.isoparse(f"{dummy_date} {timage_str}")
-            except Exception:
+            except Exception as ex:
                 raise ValueError(
-                    f"'{time_str}' is not a valid time difference " "expression!"
-                )
+                    f"'{time_str}' is not a valid time difference expression!"
+                ) from ex
 
         delta = tref - timage
         return delta

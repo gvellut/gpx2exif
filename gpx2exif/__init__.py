@@ -1,4 +1,4 @@
-__version__ = "12"
+__version__ = "13"
 
 import colorama
 
