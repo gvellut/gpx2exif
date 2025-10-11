@@ -25,6 +25,7 @@ dependencies = [
     "piexif~=1.1.0",
     "gpxpy~=1.6.0",
     "pandas~=2.3.0",
+    "pytz",
     "simplekml~=1.3.0",
     "flickrapi~=2.4.0",
     "python-dateutil~=2.9.0",

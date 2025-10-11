@@ -40,6 +40,8 @@ There is no standard time zone tag in EXIF. Some cameras will set the __Offset T
 
 For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta-tz` option must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the time shift must be set to *minus* 1 hour. However, if the Offset Time Original is present and set to "+01:00", `gpx2exif` will set the delta automatically (by default) to `-1h`.
 
+It is also possible to use a named timezone (for example "Europe/Paris") with the `--tz` option. In that case, the offset will be computed based on the time of the GPX. If the GPX track spans a change in DST, a warning will be issued and the offset at the beginning of the track will be used. A special value "auto" can be used to take the current timezone of the computer.
+
 #### Drift and time zone shifts
 
 If both `--delta-tz` and `--delta` are present, they are added together to obtain the shift for conversion to UTC.
@@ -125,6 +127,13 @@ Options:
                                 for format). If present, assumes --ignore-
                                 offset. [default: no shift (timezone of the
                                 image if present)]
+
+  --tz TEXT                     Named timezone to apply to the photo times to
+                                match the date in GPX (see documentation for
+                                format). If present, assumes --ignore-offset.
+                                A special value 'auto' will automatically use
+                                the local timezone. [default: no shift
+                                (timezone of the image if present)]
 
   -t, --tolerance TEXT          Tolerance if time of the photo is not inside
                                 the time range of the GPX track. (default:
