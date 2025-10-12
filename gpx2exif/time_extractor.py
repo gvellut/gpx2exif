@@ -100,20 +100,13 @@ def extract_clock_with_vision_api(photo_path):
     type=click.Path(exists=True, resolve_path=True, dir_okay=False),
 )
 @click.option(
-    "--gcp-project",
-    "gcp_project",
-    help="GCP project to use for the Vision API",
-    required=True,
-    envvar="GPX2EXIF_GCP_PROJECT",
-)
-@click.option(
     "--both-am-pm",
     "is_both_am_pm",
     is_flag=True,
     help="Output both AM and PM possibilities for the time",
     required=False,
 )
-def extract_time(photo_path, gcp_project, is_both_am_pm):
+def extract_time(photo_path, is_both_am_pm):
     exif_data = piexif.load(photo_path)
     # assumes same timezone as the clock read from the image : will set both to UTC
     # in UTC

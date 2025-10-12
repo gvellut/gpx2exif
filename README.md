@@ -84,9 +84,11 @@ It is also possible to indicate the time shift as a difference between the refer
 16:42:05-16:48:59
 ```
 
-It can be useful when taking a picture of the clock on the phone / GPS recorder. Then the reference time can be read from the photo, while the camera time can be obtained from the EXIF of the photo file. On top of that, the `-z` option should be set to indicate the timezone (since the reference would be in local time). If the camera drifts a lot (it is the case on one of my cameras), this process can be done after every photo session to keep the time shift accurate.
+### Read the time shift from a photo
 
-To automate this workflow, there is an example script in the `scripts` folder: It uses [GCP Cloud Vision](https://cloud.google.com/vision/docs/ocr) to read the time from a photo of the phone clock and outputs a time shift difference in the format expected by `gpx2exif`. If you use it, you need to setup a GCP project and enable the Cloud Vision API on your side, as well as configure the GCP project for the script (for example, through an env var `CLOUDSDK_CORE_PROJECT`). It may also not work depending on the phone clock (I use a Samsung phone).
+The time difference can be useful when taking a picture of the clock on the phone / GPS recorder. Then the reference time can be read from the photo, while the camera time can be obtained from the EXIF of the photo file. On top of that, the `-z` option should be set to indicate the timezone (since the reference would be in local time). If the camera drifts a lot (it is the case on one of my cameras), this process can be done after every photo session to keep the time shift accurate.
+
+To automate this workflow further, the `extract-time` subcommand can be used: It uses [GCP Cloud Vision](https://cloud.google.com/vision/docs/ocr) to read the time from a photo of the phone clock and outputs a time shift in the format expected by `gpx2exif` ie `3m54s`: It actually computes the time shift, instead of keeping the shift as a time difference like in the section above. If you use it, you need to setup a GCP project and enable the Cloud Vision API on your side. You will also possibly need to setup credentials and the GCP project name (see the [extract-time subcommand](#extract-time-subcommand) section). It may also not work depending on the phone clock: I use a Samsung phone and the format of the clock must be something like `7:12:23`.
 
 # Commands
 
@@ -140,11 +142,20 @@ The `extract-time` subcommand allows you to extract the time from a photo of a c
 
 `gpx2exif extract-time ...`
 
-To install the dependency for this command, add the "vision" extra. For example with `pip`:
+### Optional dependency
+
+To install the dependency for this command, add the `vision` extra when installing `gpx2exif`. For example with `pip`:
 
 `pip install gpx2exif[vision]`
 
-Authentication with Google Cloud is handled by the client library. If a service account is needed, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable can be set to the location of a credential JSON file. See the [Google Cloud SDK documentation](https://cloud.google.com/docs/authentication/application-default-credentials) for more details.
+### Authentication 
+
+Authentication with Google Cloud (as well as the selection of a project) is handled by the client library: 
+
+- If a service account is used, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable can be set to the location of a credential JSON file. The GCP project used will be the one to which the SA belongs.
+- If using **Application Default Credentials** (with `gcloud auth application-default login`), the project can be set with the `GOOGLE_CLOUD_PROJECT` env var.
+
+See the [Google Cloud SDK documentation](https://cloud.google.com/docs/authentication/application-default-credentials) for more details.
 
 # Examples
 
