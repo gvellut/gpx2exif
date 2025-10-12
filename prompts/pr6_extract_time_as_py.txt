@@ -1,0 +1,14 @@
+Convert the extract_time.sh shell script into Python :
+- add a subcommand to the main.py group, named extract-time
+- It will take a photo path as arg
+- create a new python file since moslty unrelated to the rest
+- Use the Google ml vision API and call it from Python. Add a dependency group to the UV project file : so optional to install the Google ML Vision library. Call the group "vision"
+- the name of the project should be passed as an option to the command or env (using Click convention ie GPX2EXIF_GCP_PROJECT). Currently, passed as env var for gcloud tool : CLOUDSDK_CORE_PROJECT=ai-test-87465. Make the click option mandatory (so the current gcloud tool env var ie CLOUDSDK_CORE_PROJECT would not work : it is OK).
+- Currently, the user auth is the default auth. Keep that possible (as default so nothing special to do I assume but maybe there is with the Python API). Add options to specify Service Account Key or alternative auth but only if possible with the a single option param. If not possible with a single param, forget it. Write a comment in the code if not possible.
+- Keep the sh around (I will delete it myself)
+- do not use exiftool to read the DateTimeOriginal from the photo : use piexif like the main gpx2exif program. Do not use any shell tool. Only Python.
+- output the result with the date + time diff in ISO format. Add an option to output only the time diff (without the date). There should be no TZ info to the format, no ms either ie sthing like 2025-10-24T06:54:23
+- the clock read from the image doesn't have the date. Choose the most likely date by considering the time closest to the time in the EXIF of the photo (which is 24h + has date). It could be the day after or before if around midnight.
+- Currently, since the clock on the reference is 12 hours (AM + PM not indicated on the image), 2 results are shown : one AM the other PM for the time ref. Instead, use the time in the photo (read from the EXIF) to determine which AM or PM is the most likely by choosing the closest to the time in the photo. Also add an option to output both AM and PM like now.
+- the output of the time diff should on a single line for easy copy : write prefix or suffix text before or after. Also write (non debug), the output from the time extraction following the call to the ML Vision API.
+- Add to the documention some short note about this subcommand. Do not write the full --help.
