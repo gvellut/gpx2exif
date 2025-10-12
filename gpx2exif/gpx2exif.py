@@ -450,7 +450,7 @@ def gpx2exif(
                     f"GPX track: {start_offset} vs {end_offset}. Using the start offset."
                 )
 
-            delta_tz = start_offset
+            delta_tz = -start_offset
         elif delta_tz:
             delta_tz = process_delta([delta_tz])
         else:
