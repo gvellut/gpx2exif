@@ -88,34 +88,21 @@ It can be useful when taking a picture of the clock on the phone / GPS recorder.
 
 To automate this workflow, there is an example script in the `scripts` folder: It uses [GCP Cloud Vision](https://cloud.google.com/vision/docs/ocr) to read the time from a photo of the phone clock and outputs a time shift difference in the format expected by `gpx2exif`. If you use it, you need to setup a GCP project and enable the Cloud Vision API on your side, as well as configure the GCP project for the script (for example, through an env var `CLOUDSDK_CORE_PROJECT`). It may also not work depending on the phone clock (I use a Samsung phone).
 
-# Options
+# Commands
 
-To get some help about the arguments to the command, just launch with the --help option:
+To get some help about the arguments to the command, just launch with the --help option.
 
-```
-gpx2exif --help
-Usage: gpx2exif [OPTIONS] COMMAND [ARGS]...
-
-  Add location information to images on disk or on Flickr based on a GPX file
-
-Options:
-  --debug   Flag to activate debug mode
-  --help    Show this message and exit.
-
-Commands:
-  flickr
-  image
-```
+`gpx2exif --help`
 
 The `--help` option can also be used for the subcommands.
 
-## image subcommand
+## `image` subcommand
 
 The image subcommand allows to synch a GPX file with an image file or a folder of image files on a local disk.
 
 `gpx2exif image ...`
 
-## flickr subcommand
+## `flickr` subcommand
 
 The flickr subcommand allows to synch a GPX file with images hosted on Flickr. 
 
@@ -147,18 +134,17 @@ As long as the token is cached, there will be no need no login again for subsequ
 
 The tool will run with the permission of the user that logged in. In order to switch user, the `oauth-tokens.sqlite` will need to be deleted.
 
-## extract-time subcommand
+## `extract-time` subcommand
+
+The `extract-time` subcommand allows you to extract the time from a photo of a clock and compute the time difference with the EXIF time of the photo. This is useful to calculate the `--delta` to apply to a batch of photos.
+
+`gpx2exif extract-time ...`
 
 To install the dependency for this command, add the "vision" extra. For example with `pip`:
 
 `pip install gpx2exif[vision]`
 
-The `extract-time` subcommand allows you to extract the time from a photo of a clock and compute the time difference with the EXIF time of the photo. This is useful to calculate the `--delta` to apply to a batch of photos.
-
 Authentication with Google Cloud is handled by the client library. If a service account is needed, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable can be set to the location of a credential JSON file. See the [Google Cloud SDK documentation](https://cloud.google.com/docs/authentication/application-default-credentials) for more details.
-
-`gpx2exif extract-time ...`
-
 
 # Examples
 
