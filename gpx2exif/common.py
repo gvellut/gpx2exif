@@ -265,10 +265,6 @@ def parse_timedelta(time_str):
             # try full date + time
             tref = dateutil.parser.isoparse(tref_str)
             timage = dateutil.parser.isoparse(timage_str)
-            if tref.tzinfo and timage.tzinfo and tref.utcoffset() != timage.utcoffset():
-                logger.warning(
-                    f"Timezone offset is different between the reference and image time: {tref.utcoffset()} vs {timage.utcoffset()}."
-                )
         except Exception:
             try:
                 # try only time
