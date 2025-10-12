@@ -40,6 +40,8 @@ There is no standard time zone tag in EXIF. Some cameras will set the __Offset T
 
 For example, if the local time is in the "Europe/Paris" time zone aka GMT+1 during winter, it is equivalent to an Offset Time Original of "+01:00". This means that, if the time in the image is 11:15am in local time, it is 10:15am in UTC. If the Offset Time Original is not present (or is ignored), then the `--delta-tz` option must be set to `-1h` to compensate: The 11:15am found in the EXIF tag is considered to be in UTC but, actually, in UTC, it should be 10:15am so the time shift must be set to *minus* 1 hour. However, if the Offset Time Original is present and set to "+01:00", `gpx2exif` will set the delta automatically (by default) to `-1h`.
 
+Instead of a fixed offset with `--delta-tz`, it is possible to use a named timezone (for example "Europe/Paris") with the `--tz` option. In that case, the offset will be computed based on the date at the beginning of the GPX. If the GPX track spans a change in DST (ie multiple offsets), a warning will be issued. A special value "auto" can be used to take the current timezone of the computer.
+
 #### Drift and time zone shifts
 
 If both `--delta-tz` and `--delta` are present, they are added together to obtain the shift for conversion to UTC.
@@ -91,7 +93,7 @@ To automate this workflow, there is an example script in the `scripts` folder: I
 To get some help about the arguments to the command, just launch with the --help option:
 
 ```
-~$ gpx2exif --help
+gpx2exif --help
 Usage: gpx2exif [OPTIONS] COMMAND [ARGS]...
 
   Add location information to images on disk or on Flickr based on a GPX file
@@ -105,99 +107,19 @@ Commands:
   image
 ```
 
+The `--help` option can also be used for the subcommands.
+
 ## image subcommand
 
-The image subcommand allows to synch a GPX file with an image file or a folder of image files on a local disk :
+The image subcommand allows to synch a GPX file with an image file or a folder of image files on a local disk.
 
-```
-~$ gpx2exif image --help
-Usage: gpx2exif image [OPTIONS] GPX_FILE IMAGE_FILE_OR_DIR
-
-  Add GPS EXIF tags to local images based on a GPX file
-
-Options:
-  -d, --delta TEXT              Time shift to apply to the photo times to
-                                match the date in GPX (see documentation for
-                                format). Multiple possible.[default: no shift]
-
-  -z, --delta-tz TEXT           Time zone offset to apply to the photo times
-                                to match the date in GPX (see documentation
-                                for format). If present, assumes --ignore-
-                                offset. [default: no shift (timezone of the
-                                image if present)]
-
-  -t, --tolerance TEXT          Tolerance if time of the photo is not inside
-                                the time range of the GPX track. (default:
-                                10s)
-
-  -o, --ignore-offset           Flag to indicate that the OffsetTimeOriginal
-                                should not be used (time of images is assumed
-                                UTC). Use --delta to compensate for both
-                                timezone and drift.
-
-  -c, --clear                   Flag to indicate that the times of the photos
-                                should be cleared if no position can be
-                                computed.
-
-  -k, --kml TEXT                Path for a KML output file with placemarks for
-                                the photos (useful for checking the delta)
-
-  -n, --no-update-images        Flag to indicate that the images should not be
-                                udpated and only a KML will generated
-
-  -u, --update-time             Flag to indicate that the times of the photos
-                                should be updated according to the delta.
-
-  -a, --ask                     Flag to indicate a confirmation prompt will be
-                                displayed before photos are updated.
-
-  --kml_thumbnail_size INTEGER  Pixel size of the image popup in the KML
-  --help                        Show this message and exit.
-```
+`gpx2exif image ...`
 
 ## flickr subcommand
 
-```
-~$ gpx2exif flickr --help
-Usage: gpx2exif flickr [OPTIONS] GPX_FILE FLICKR_ALBUM_URL
+The flickr subcommand allows to synch a GPX file with images hosted on Flickr. 
 
-  Add location information to Flickr images based on a GPX file
-
-Options:
-  -d, --delta TEXT              Time shift to apply to the photo times to
-                                match the date in GPX (see documentation for
-                                format). Multiple possible.[default: no shift]
-
-  -z, --delta-tz TEXT           Time zone offset to apply to the photo times
-                                to match the date in GPX (see documentation
-                                for format). If present, assumes --ignore-
-                                offset. [default: no shift (timezone of the
-                                image if present)]
-
-  -t, --tolerance TEXT          Tolerance if time of the photo is not inside
-                                the time range of the GPX track. (default:
-                                10s)
-
-  -c, --clear                   Flag to indicate that the times of the photos
-                                should be cleared if no position can be
-                                computed.
-
-  -k, --kml TEXT                Path for a KML output file with placemarks for
-                                the photos (useful for checking the delta)
-
-  -n, --no-update-images        Flag to indicate that the images should not be
-                                udpated and only a KML will generated
-
-  --kml_thumbnail_size INTEGER  Pixel size of the image popup in the KML
-  --api_key TEXT                Flickr API key  [required]
-  --api_secret TEXT             Flickr API secret  [required]
-  --config FILE                 Path to optional config file for the Flickr
-                                API credentials [default :
-                                /Users/guilhem/Library/Application
-                                Support/gpx2exif/flickr_api_credentials.txt]
-
-  --help                        Show this message and exit.
-```
+`gpx2exif flickr ...`
 
 ### Flickr API permision
 

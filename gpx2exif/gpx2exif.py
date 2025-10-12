@@ -8,8 +8,10 @@ import time
 
 import click
 import piexif
+import pytz
 
 from .common import (
+    UpdateConfirmationAbortedException,
     ask_option,
     clear_option,
     compute_pos,
@@ -26,7 +28,6 @@ from .common import (
     tolerance_option,
     update_images_option,
     update_time_option,
-    UpdateConfirmationAbortedException,
 )
 
 logger = logging.getLogger(__package__)
@@ -365,6 +366,19 @@ def image_style(x):
 )
 @delta_option
 @delta_tz_option
+@click.option(
+    "-z",
+    "--tz",
+    "tz",
+    help=(
+        "Named timezone to apply to the photo times "
+        "to match the date in GPX (see documentation for format). "
+        "If present, assumes --ignore-offset. "
+        "A special value 'auto' will automatically use the local timezone. "
+        "[default: no shift (timezone of the image if present)]"
+    ),
+    required=False,
+)
 @tolerance_option
 @click.option(
     "-o",
@@ -391,6 +405,7 @@ def gpx2exif(
     img_fileordirpath,
     delta,
     delta_tz,
+    tz,
     tolerance,
     is_ignore_offset,
     is_clear,
@@ -401,6 +416,9 @@ def gpx2exif(
     is_confirm,
 ):
     try:
+        if delta_tz and tz:
+            raise click.UsageError("Cannot use --delta-tz and --tz at the same time")
+
         if delta_tz:
             is_ignore_offset = True
 
@@ -408,19 +426,44 @@ def gpx2exif(
         delta = process_delta(delta)
         print_delta(delta, "Time")
 
-        if delta_tz:
-            delta_tz = process_delta([delta_tz])
-            print_delta(delta_tz, "TZ time")
+        gpx_segments = process_gpx(gpx_filepath)
 
+        if tz:
+            is_ignore_offset = True
+            if tz == "auto":
+                tz = datetime.now().astimezone().tzinfo
+            else:
+                try:
+                    tz = pytz.timezone(tz)
+                except pytz.UnknownTimeZoneError as ex:
+                    raise click.UsageError(f"Unknown timezone: {tz}") from ex
+
+            gpx_start_time = gpx_segments[0].iloc[0].name.replace(tzinfo=None)
+            gpx_end_time = gpx_segments[-1].iloc[-1].name.replace(tzinfo=None)
+
+            start_offset = tz.utcoffset(gpx_start_time)
+            end_offset = tz.utcoffset(gpx_end_time)
+
+            if start_offset != end_offset:
+                logger.warning(
+                    "Timezone offset is different between the start and end of the "
+                    f"GPX track: {start_offset} vs {end_offset}. Using the start offset."
+                )
+
+            delta_tz = -start_offset
+        elif delta_tz:
+            delta_tz = process_delta([delta_tz])
+        else:
+            delta_tz = None
+
+        if delta_tz:
+            print_delta(delta_tz, "TZ time")
             delta_total = delta + delta_tz
             print_delta(delta_total, "Total time")
         else:
-            delta_tz = None
             delta_total = delta
 
         tolerance = process_tolerance(tolerance)
-        gpx_segments = process_gpx(gpx_filepath)
-
         img_fileordirpath = Path(img_fileordirpath)
 
         logger.info("Synching EXIF GPS to GPX...")

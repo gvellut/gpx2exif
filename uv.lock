@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -152,6 +152,7 @@ dependencies = [
     { name = "pandas" },
     { name = "piexif" },
     { name = "python-dateutil" },
+    { name = "pytz" },
     { name = "simplekml" },
 ]
 
@@ -172,6 +173,7 @@ requires-dist = [
     { name = "piexif", specifier = "~=1.1.0" },
     { name = "pyinstaller", marker = "extra == 'dev'", specifier = "~=6.0" },
     { name = "python-dateutil", specifier = "~=2.9.0" },
+    { name = "pytz" },
     { name = "simplekml", specifier = "~=1.3.0" },
 ]
 provides-extras = ["dev"]

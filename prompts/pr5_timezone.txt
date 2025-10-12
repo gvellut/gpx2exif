@@ -1,0 +1,13 @@
+Add support for named timezones using pytz (on top of the constant offset) : 
+- for gpx2exif.py (not flickr : no object)
+- add support for named timezone (including TZ with use of DST) : add a new param --tz with a named timezone among those supported by pytz (make sure the name is validated at some point). The current param "--delta-tz" will stay. It will take constant time delta like now (do not change it). The offset determined from the named timezone will take the place of the delta-tz after some processing.
+- Check the beginning of the GPX and the end : if they are in different offset (because of DST), print a warning but take the offset for the beginning of the GPX in that case. If there is only one offset for the whole GPX, use that as the offset.
+- There should be only one offset determined for the whole batch of photos : so after the initial processing the value that would have come from -delta-tz (if set) and the offset determined from the named TZ should be equivalent in use (simply the offset from the TZ will replace the constant delta).
+- if both --tz and --delta-tz are set : make it an error and indicate the details.
+- print the offset determined from the TZ at same location as for the delta-tz
+- the --tz has a special value : "auto" which takes the TZ from the local computer (but the offset is still determined from the times of the GPX, not time when run).
+- add the pytz dependency in the pyproject.toml
+- Note that with DST the offset from the named tz delta might be different for the GPX (date) and the parse_timedelta (time delta in the form of T<ref>-T<exif>)
+    - if the offset is different between the GPX (date) and the times input to parse_timedelta (if date is present), print a warning. It might warrant a check from the user.
+    - however, the parse_timedelta (time delta in the form of T<ref>-T<exif>) is usually simply a diff of hours (without a date), so in that case, there should be no warning (since no way to tell anyway).
+- Update the documentation : add a simple note of the possibility of passing a timezone with simple example.
