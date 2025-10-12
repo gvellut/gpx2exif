@@ -1,10 +1,10 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 import logging
 import re
 
 import click
-import piexif
 from google.cloud import vision
+import piexif
 
 from .gpx2exif import read_original_photo_time
 
@@ -75,14 +75,16 @@ def extract_time(photo_path, gcp_project, is_time_diff_only, is_both_am_pm):
     image = vision.Image(content=content)
 
     logger.info("Extracting time from photo with Vision API...")
-    response = client.text_detection(image=image, image_context={"language_hints": ["en"]})
+    response = client.text_detection(
+        image=image, image_context={"language_hints": ["en"]}
+    )
     texts = response.text_annotations
     logger.info("Done")
 
     if response.error.message:
         raise Exception(
-            "{}\nFor more info on error messages, check: "
-            "https://cloud.google.com/apis/design/errors".format(response.error.message)
+            f"{response.error.message}\nFor more info on error messages, check: "
+            "https://cloud.google.com/apis/design/errors"
         )
 
     time_contenders = []
