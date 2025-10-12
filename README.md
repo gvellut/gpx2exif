@@ -177,7 +177,24 @@ gpx2exif flickr geopaparazzi_20200315_183754.gpx https://www.flickr.com/photos/o
 
 (the API key and secret come from a config file and do not need to be passed to the command)
 
-# TODO 
+## extract-time subcommand
+
+The `extract-time` subcommand allows you to extract the time from a photo of a clock and compute the time difference with the EXIF time of the photo. This is useful to calculate the `--delta` to apply to a batch of photos.
+
+```
+~$ gpx2exif extract-time --help
+Usage: gpx2exif extract-time [OPTIONS] PHOTO_PATH
+
+  Extract time from a photo and compute a delta with the EXIF time
+
+Options:
+  --gcp-project TEXT    GCP project to use for the Vision API  [required]
+  --time-diff-only      Output only the time difference
+  --both-am-pm          Output both AM and PM possibilities for the time
+  --help                Show this message and exit.
+```
+
+# TODO
 
 - pyinstaller.exe .\pyinstaller_bootstrap\main.py -p . --noconfirm -F -n gpx2exif
 - way to easily reverse time change written to image (output command that will work)

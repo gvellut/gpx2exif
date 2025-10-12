@@ -33,6 +33,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pyinstaller~=6.0"]
+vision = ["google-cloud-vision~=3.0"]
 
 [project.urls]
 Homepage = "https://github.com/gvellut/gpx2exif"
