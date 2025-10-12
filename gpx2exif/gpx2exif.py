@@ -11,6 +11,7 @@ import piexif
 import pytz
 
 from .common import (
+    UpdateConfirmationAbortedException,
     ask_option,
     clear_option,
     compute_pos,
@@ -27,7 +28,6 @@ from .common import (
     tolerance_option,
     update_images_option,
     update_time_option,
-    UpdateConfirmationAbortedException,
 )
 
 logger = logging.getLogger(__package__)
@@ -435,8 +435,8 @@ def gpx2exif(
             else:
                 try:
                     tz = pytz.timezone(tz)
-                except pytz.UnknownTimeZoneError:
-                    raise click.UsageError(f"Unknown timezone: {tz}")
+                except pytz.UnknownTimeZoneError as ex:
+                    raise click.UsageError(f"Unknown timezone: {tz}") from ex
 
             gpx_start_time = gpx_segments[0].iloc[0].name.replace(tzinfo=None)
             gpx_end_time = gpx_segments[-1].iloc[-1].name.replace(tzinfo=None)
@@ -446,7 +446,8 @@ def gpx2exif(
 
             if start_offset != end_offset:
                 logger.warning(
-                    f"Timezone offset is different between the start and end of the GPX track: {start_offset} vs {end_offset}. Using the start offset."
+                    "Timezone offset is different between the start and end of the "
+                    f"GPX track: {start_offset} vs {end_offset}. Using the start offset."
                 )
 
             delta_tz = start_offset
