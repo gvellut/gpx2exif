@@ -1,7 +1,7 @@
 [project]
 name = "gpx2exif"
 dynamic = ["version"]
-description = "Simple command-line tool to add GPS info from a GPX file to EXIF tags in images"
+description = "Command-line tool to add GPS info from a GPX file to EXIF tags in images"
 license = "GPL-3.0-or-later"
 readme = "README.md"
 requires-python = ">=3.11"
