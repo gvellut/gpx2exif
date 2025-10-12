@@ -181,6 +181,8 @@ gpx2exif flickr geopaparazzi_20200315_183754.gpx https://www.flickr.com/photos/o
 
 The `extract-time` subcommand allows you to extract the time from a photo of a clock and compute the time difference with the EXIF time of the photo. This is useful to calculate the `--delta` to apply to a batch of photos.
 
+Authentication with Google Cloud is handled by the client library. If a service account is needed, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable can be set to the location of a credential JSON file. See the [Google Cloud SDK documentation](https://cloud.google.com/docs/authentication/application-default-credentials) for more details.
+
 ```
 ~$ gpx2exif extract-time --help
 Usage: gpx2exif extract-time [OPTIONS] PHOTO_PATH
