@@ -147,6 +147,19 @@ As long as the token is cached, there will be no need no login again for subsequ
 
 The tool will run with the permission of the user that logged in. In order to switch user, the `oauth-tokens.sqlite` will need to be deleted.
 
+## extract-time subcommand
+
+To install the dependency for this command, add the "vision" extra. For example with `pip`:
+
+`pip install gpx2exif[vision]`
+
+The `extract-time` subcommand allows you to extract the time from a photo of a clock and compute the time difference with the EXIF time of the photo. This is useful to calculate the `--delta` to apply to a batch of photos.
+
+Authentication with Google Cloud is handled by the client library. If a service account is needed, the `GOOGLE_APPLICATION_CREDENTIALS` environment variable can be set to the location of a credential JSON file. See the [Google Cloud SDK documentation](https://cloud.google.com/docs/authentication/application-default-credentials) for more details.
+
+`gpx2exif extract-time ...`
+
+
 # Examples
 
 ### Basic usage
@@ -177,7 +190,7 @@ gpx2exif flickr geopaparazzi_20200315_183754.gpx https://www.flickr.com/photos/o
 
 (the API key and secret come from a config file and do not need to be passed to the command)
 
-# TODO 
+# TODO
 
 - pyinstaller.exe .\pyinstaller_bootstrap\main.py -p . --noconfirm -F -n gpx2exif
 - way to easily reverse time change written to image (output command that will work)
