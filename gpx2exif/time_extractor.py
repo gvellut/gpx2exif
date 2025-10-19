@@ -8,7 +8,14 @@ import click
 # Annoying warnings/logs see
 # https://github.com/google-ai-edge/mediapipe/issues/5371#issuecomment-3395225750
 os.environ["GRPC_VERBOSITY"] = "ERROR"
-from google.cloud import vision
+
+try:
+    from google.cloud import vision
+
+    VISION_AVAILABLE = True
+except ImportError:
+    VISION_AVAILABLE = False
+
 import piexif
 
 from .gpx2exif import read_original_photo_time
@@ -40,6 +47,13 @@ def find_most_likely_datetime(ref_dt, time_str_ambiguous):
 # suitable format for --delta in gpx2exif program
 def print_delta(delta):
     logger.info(f"{format_timedelta(delta)}")
+
+
+def format_time_range(dt_exif, dt_clock):
+    """Format time range as HH:MM:SS-HH:MM:SS"""
+    time_exif = dt_exif.strftime("%H:%M:%S")
+    time_clock = dt_clock.strftime("%H:%M:%S")
+    return f"{time_exif}-{time_clock}"
 
 
 def format_timedelta(td):
@@ -106,7 +120,20 @@ def extract_clock_with_vision_api(photo_path):
     help="Output both AM and PM possibilities for the time",
     required=False,
 )
-def extract_time(photo_path, is_both_am_pm):
+@click.option(
+    "--time-range",
+    "is_time_range",
+    is_flag=True,
+    help="Output time difference as time range (HH:MM:SS-HH:MM:SS) instead of delta",
+    required=False,
+)
+def extract_time(photo_path, is_both_am_pm, is_time_range):
+    if not VISION_AVAILABLE:
+        raise click.ClickException(
+            "Google Cloud Vision is not installed. "
+            "Please install the extra: 'vision' eg pip install gpx2exif[vision]"
+        )
+
     exif_data = piexif.load(photo_path)
     # assumes same timezone as the clock read from the image : will set both to UTC
     # in UTC
@@ -122,15 +149,26 @@ def extract_time(photo_path, is_both_am_pm):
     logger.info("=====")
 
     if is_both_am_pm:
-        dt_clock1 = datetime.strptime(time_str_clock, "%H:%M:%S").time()
-        # in UTC : same as read in EXIF file
-        dt_clock1.replace(tzinfo=timezone.utc)
-        dt_clock2 = dt_clock1.replace(hour=(dt_clock1.hour + 12) % 24)
-        delta1 = dt_clock1 - dt_exif
-        delta2 = dt_clock2 - dt_exif
-        print_delta(delta1)
-        print_delta(delta2)
+        time_clock1 = datetime.strptime(time_str_clock, "%H:%M:%S").time()
+        time_clock2 = time_clock1.replace(hour=(time_clock1.hour + 12) % 24)
+
+        # Create datetime objects in UTC (same as EXIF)
+        dt_clock1 = datetime.combine(dt_exif.date(), time_clock1, tzinfo=timezone.utc)
+        dt_clock2 = datetime.combine(dt_exif.date(), time_clock2, tzinfo=timezone.utc)
+
+        if is_time_range:
+            logger.info(format_time_range(dt_exif, dt_clock1))
+            logger.info(format_time_range(dt_exif, dt_clock2))
+        else:
+            delta1 = dt_clock1 - dt_exif
+            delta2 = dt_clock2 - dt_exif
+            print_delta(delta1)
+            print_delta(delta2)
     else:
         dt_clock = find_most_likely_datetime(dt_exif, time_str_clock)
-        delta = dt_clock - dt_exif
-        print_delta(delta)
+
+        if is_time_range:
+            logger.info(format_time_range(dt_exif, dt_clock))
+        else:
+            delta = dt_clock - dt_exif
+            print_delta(delta)
