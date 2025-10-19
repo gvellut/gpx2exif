@@ -367,7 +367,6 @@ def image_style(x):
 @delta_option
 @delta_tz_option
 @click.option(
-    "-z",
     "--tz",
     "tz",
     help=(
