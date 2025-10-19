@@ -143,7 +143,6 @@ def extract_time(photo_path, is_both_am_pm, is_time_range):
 
     logger.info("Extracting time from photo with Vision API...")
     time_str_clock = extract_clock_with_vision_api(photo_path)
-    time_str_clock = "7:18:54"
     logger.info(f"Found clock time in image: {time_str_clock}")
 
     logger.info("=====")
