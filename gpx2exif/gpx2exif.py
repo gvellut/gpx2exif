@@ -12,7 +12,6 @@ import pytz
 
 from .common import (
     UpdateConfirmationAbortedException,
-    ask_option,
     clear_option,
     compute_pos,
     delta_option,
@@ -28,6 +27,7 @@ from .common import (
     tolerance_option,
     update_images_option,
     update_time_option,
+    yes_option,
 )
 
 logger = logging.getLogger(__package__)
@@ -395,7 +395,7 @@ def image_style(x):
 @kml_option
 @update_images_option
 @update_time_option
-@ask_option
+@yes_option
 @kml_thumbnail_size_option
 @click.pass_context
 def gpx2exif(
@@ -412,7 +412,7 @@ def gpx2exif(
     kml_thumbnail_size,
     is_update_images,
     is_update_time,
-    is_confirm,
+    is_yes,
 ):
     try:
         if delta_tz and tz:
@@ -446,7 +446,8 @@ def gpx2exif(
             if start_offset != end_offset:
                 logger.warning(
                     "Timezone offset is different between the start and end of the "
-                    f"GPX track: {start_offset} vs {end_offset}. Using the start offset."
+                    f"GPX track: {start_offset} vs {end_offset}. Using the start "
+                    "offset."
                 )
 
             delta_tz = -start_offset
@@ -473,7 +474,7 @@ def gpx2exif(
                 fdt = format_timedelta(delta)
                 logger.warning(f"The times in the images will be shifted: {fdt}!")
 
-            if is_confirm:
+            if not is_yes:
                 if not click.confirm("The images will be updated. Confirm?"):
                     raise UpdateConfirmationAbortedException()
 

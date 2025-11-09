@@ -1,12 +1,12 @@
 export PYTHONPATH=`pwd`/..
 
 top_photo_folder="/Volumes/CrucialX8/photos"
-folder="20251012_veyrier"
-gpx="/Users/guilhem/Library/CloudStorage/GoogleDrive-guilhem.vellut@gmail.com/My Drive/___gpx/20251012-142404.gpx"
+folder="20251108_arve"
+gpx="/Users/guilhem/Library/CloudStorage/GoogleDrive-guilhem.vellut@gmail.com/My Drive/___gpx/20251108-083447.gpx"
 
-d_tz95="19:18:54-19:34:27"
+d_tz95="-1h16m5s"
 d_rx100="16:18:56-17:15:03"
-d_xs20="19:18:32-19:17:44"
+d_xs20="-59m9s"
 
 f_tz95=1
 f_rx100=0
@@ -21,7 +21,7 @@ tz="Europe/Paris"
 update=1
 
 cmd="uv run python"
-params="-m gpx2exif.main image --tz $tz --clear --ignore-offset --update-time --kml_thumbnail_size 350 --ask \"$gpx\""
+params="-m gpx2exif.main image --tz $tz --clear --ignore-offset --update-time --kml_thumbnail_size 350 \"$gpx\""
 if [[ $update -eq 0 ]];
 then
     params+=" --no-update-images"

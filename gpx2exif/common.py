@@ -115,13 +115,13 @@ update_time_option = click.option(
     required=False,
 )
 
-ask_option = click.option(
-    "-a",
-    "--ask",
-    "is_confirm",
+yes_option = click.option(
+    "-y",
+    "--yes",
+    "is_yes",
     is_flag=True,
     help=(
-        "Flag to indicate a confirmation prompt will be displayed before photos "
+        "Flag to indicate no confirmation prompt will be displayed before photos "
         "are updated."
     ),
     required=False,
