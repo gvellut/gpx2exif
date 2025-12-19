@@ -125,7 +125,6 @@ def collect_image_positions(
     Collect positions for images to generate KML output.
     """
     positions = []
-    
     if img_fileordirpath.is_file():
         img_files = [img_fileordirpath]
     elif img_fileordirpath.is_dir():
@@ -188,17 +187,13 @@ def synch_gps_exif_with_geotag(
     cmd.extend(["-geotag", str(gpx_filepath)])
     
     # Handle time offset for geotag matching
-    # The -geotime option allows specifying time offset
+    # The -geosync option allows specifying time offset in seconds
     if delta != timedelta(0):
         # Convert timedelta to seconds with sign
         offset_seconds = int(delta.total_seconds())
-        if offset_seconds >= 0:
-            offset_str = f"+{offset_seconds}"
-        else:
-            offset_str = str(offset_seconds)
-        # Use -geotime to shift the time for geotag matching
-        # Format: -geotime<DateTimeOriginal#{offset}
-        cmd.extend([f"-geotime<DateTimeOriginal#{offset_str}"])
+        # Use -geosync to shift the time for geotag matching
+        # Format: -geosync={offset_seconds}
+        cmd.extend([f"-geosync={offset_seconds}"])
     
     # Overwrite original files
     cmd.append("-overwrite_original")
@@ -246,12 +241,19 @@ def synch_gps_exif_with_geotag(
             logger.info("Updating DateTimeOriginal tags...")
             update_cmd = ["exiftool"]
             
-            # Calculate the time shift
+            # Calculate the time shift in HH:MM:SS format
             offset_seconds = int(delta.total_seconds())
-            # Use += operator with the offset (works for both positive and negative)
-            # offset_seconds can be positive or negative
+            hours = abs(offset_seconds) // 3600
+            minutes = (abs(offset_seconds) % 3600) // 60
+            seconds = abs(offset_seconds) % 60
+            
+            # Build time shift string in format YYYY:MM:DD HH:MM:SS
+            sign = "+" if offset_seconds >= 0 else "-"
+            time_shift = f"{sign}0:0:0 {hours}:{minutes}:{seconds}"
+            
+            # Use += operator with the time shift
             update_cmd.extend([
-                f"-DateTimeOriginal+={offset_seconds}",
+                f"-DateTimeOriginal+={time_shift}",
                 "-overwrite_original"
             ])
             
