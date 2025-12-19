@@ -62,7 +62,7 @@ def image_style(x):
                     translate = "translateY(-100%)"
                 elif orientation == 8:
                     angle = -90
-                    origin = "top right"
+                    origin = "top right;"
                     translate = "translateX(-100%)"
                 else:
                     return ""
@@ -196,8 +196,9 @@ def synch_gps_exif_with_geotag(
             offset_str = f"+{offset_seconds}"
         else:
             offset_str = str(offset_seconds)
-        # Use -geotime to shift the time
-        cmd.extend(["-geotime<${DateTimeOriginal}" + offset_str])
+        # Use -geotime to shift the time for geotag matching
+        # Format: -geotime<DateTimeOriginal#
+        cmd.extend([f"-geotime<DateTimeOriginal{offset_str}"])
     
     # Overwrite original files
     cmd.append("-overwrite_original")
@@ -247,16 +248,20 @@ def synch_gps_exif_with_geotag(
             
             # Calculate the time shift
             offset_seconds = int(delta.total_seconds())
+            # Use the shift format with seconds
+            # Format: -DateTimeOriginal+=seconds or -DateTimeOriginal-=seconds
             if offset_seconds >= 0:
-                offset_str = f"+={offset_seconds}"
+                # For positive offsets, add seconds
+                update_cmd.extend([
+                    f"-DateTimeOriginal+={offset_seconds}",
+                    "-overwrite_original"
+                ])
             else:
-                offset_str = f"-={abs(offset_seconds)}"
-            
-            # Update DateTimeOriginal by shifting it
-            update_cmd.extend([
-                f"-DateTimeOriginal{offset_str}",
-                "-overwrite_original"
-            ])
+                # For negative offsets, subtract seconds
+                update_cmd.extend([
+                    f"-DateTimeOriginal+={offset_seconds}",
+                    "-overwrite_original"
+                ])
             
             # Add target files/directory
             if img_fileordirpath.is_file():
