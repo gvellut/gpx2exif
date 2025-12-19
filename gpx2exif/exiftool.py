@@ -141,6 +141,7 @@ def collect_image_positions(
             time_original = read_original_photo_time(
                 img_filepath, is_ignore_offset, tz_warning
             )
+            # Only show timezone warning once for the first image
             tz_warning = False
             
             if not time_original:
@@ -189,8 +190,8 @@ def synch_gps_exif_with_geotag(
     # Handle time offset for geotag matching
     # The -geosync option allows specifying time offset in seconds
     if delta != timedelta(0):
-        # Convert timedelta to seconds with sign
-        offset_seconds = int(delta.total_seconds())
+        # Convert timedelta to seconds (rounded to avoid floating point issues)
+        offset_seconds = round(delta.total_seconds())
         # Use -geosync to shift the time for geotag matching
         # Format: -geosync={offset_seconds}
         cmd.extend([f"-geosync={offset_seconds}"])
@@ -241,17 +242,17 @@ def synch_gps_exif_with_geotag(
             logger.info("Updating DateTimeOriginal tags...")
             update_cmd = ["exiftool"]
             
-            # Calculate the time shift in HH:MM:SS format
-            offset_seconds = int(delta.total_seconds())
+            # Calculate the time shift in time delta format: [+/-]YYYY:MM:DD HH:MM:SS
+            offset_seconds = round(delta.total_seconds())
             hours = abs(offset_seconds) // 3600
             minutes = (abs(offset_seconds) % 3600) // 60
             seconds = abs(offset_seconds) % 60
             
-            # Build time shift string in format YYYY:MM:DD HH:MM:SS
+            # Build time delta string in ExifTool's time shift format
             sign = "+" if offset_seconds >= 0 else "-"
             time_shift = f"{sign}0:0:0 {hours}:{minutes}:{seconds}"
             
-            # Use += operator with the time shift
+            # Use ExifTool's time shift syntax with += operator
             update_cmd.extend([
                 f"-DateTimeOriginal+={time_shift}",
                 "-overwrite_original"
