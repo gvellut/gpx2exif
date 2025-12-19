@@ -29,6 +29,7 @@ dependencies = [
     "simplekml~=1.3.0",
     "flickrapi~=2.4.0",
     "python-dateutil~=2.9.0",
+    "PyExifTool~=0.5.0",
 ]
 
 [project.optional-dependencies]
