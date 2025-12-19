@@ -62,7 +62,7 @@ def image_style(x):
                     translate = "translateY(-100%)"
                 elif orientation == 8:
                     angle = -90
-                    origin = "top right;"
+                    origin = "top right"
                     translate = "translateX(-100%)"
                 else:
                     return ""
@@ -197,8 +197,8 @@ def synch_gps_exif_with_geotag(
         else:
             offset_str = str(offset_seconds)
         # Use -geotime to shift the time for geotag matching
-        # Format: -geotime<DateTimeOriginal#
-        cmd.extend([f"-geotime<DateTimeOriginal{offset_str}"])
+        # Format: -geotime<DateTimeOriginal#{offset}
+        cmd.extend([f"-geotime<DateTimeOriginal#{offset_str}"])
     
     # Overwrite original files
     cmd.append("-overwrite_original")
@@ -248,20 +248,12 @@ def synch_gps_exif_with_geotag(
             
             # Calculate the time shift
             offset_seconds = int(delta.total_seconds())
-            # Use the shift format with seconds
-            # Format: -DateTimeOriginal+=seconds or -DateTimeOriginal-=seconds
-            if offset_seconds >= 0:
-                # For positive offsets, add seconds
-                update_cmd.extend([
-                    f"-DateTimeOriginal+={offset_seconds}",
-                    "-overwrite_original"
-                ])
-            else:
-                # For negative offsets, subtract seconds
-                update_cmd.extend([
-                    f"-DateTimeOriginal+={offset_seconds}",
-                    "-overwrite_original"
-                ])
+            # Use += operator with the offset (works for both positive and negative)
+            # offset_seconds can be positive or negative
+            update_cmd.extend([
+                f"-DateTimeOriginal+={offset_seconds}",
+                "-overwrite_original"
+            ])
             
             # Add target files/directory
             if img_fileordirpath.is_file():
