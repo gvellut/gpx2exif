@@ -62,7 +62,7 @@ def image_style(x):
                     translate = "translateY(-100%)"
                 elif orientation == 8:
                     angle = -90
-                    origin = "top right;"
+                    origin = "top right"
                     translate = "translateX(-100%)"
                 else:
                     return ""
@@ -187,8 +187,7 @@ def synch_gps_exif_with_geotag(
     # Add the geotag option with the GPX file
     cmd.extend(["-geotag", str(gpx_filepath)])
     
-    # Handle time offset
-    # exiftool's -geotag option has a -geotag option that can be followed by modifiers
+    # Handle time offset for geotag matching
     # The -geotime option allows specifying time offset
     if delta != timedelta(0):
         # Convert timedelta to seconds with sign
@@ -205,13 +204,6 @@ def synch_gps_exif_with_geotag(
     
     # Add progress output
     cmd.append("-progress")
-    
-    # Handle update time option
-    if is_update_time and delta != timedelta(0):
-        # Update DateTimeOriginal with the shifted time
-        # We need to calculate the new time for each file
-        # This is more complex, so we'll apply the shift
-        pass
     
     # Add target files/directory
     if img_fileordirpath.is_file():
@@ -247,6 +239,55 @@ def synch_gps_exif_with_geotag(
         if result.returncode != 0:
             logger.error(f"exiftool exited with code {result.returncode}")
             return False
+        
+        # Handle update time option - update DateTimeOriginal if requested
+        if is_update_time and delta != timedelta(0):
+            logger.info("Updating DateTimeOriginal tags...")
+            update_cmd = ["exiftool"]
+            
+            # Calculate the time shift
+            offset_seconds = int(delta.total_seconds())
+            if offset_seconds >= 0:
+                offset_str = f"+={offset_seconds}"
+            else:
+                offset_str = f"-={abs(offset_seconds)}"
+            
+            # Update DateTimeOriginal by shifting it
+            update_cmd.extend([
+                f"-DateTimeOriginal{offset_str}",
+                "-overwrite_original"
+            ])
+            
+            # Add target files/directory
+            if img_fileordirpath.is_file():
+                update_cmd.append(str(img_fileordirpath))
+            elif img_fileordirpath.is_dir():
+                update_cmd.append(str(img_fileordirpath))
+                update_cmd.extend([
+                    "-ext", "jpg", "-ext", "jpeg",
+                    "-ext", "JPG", "-ext", "JPEG"
+                ])
+            
+            logger.debug(f"Update time command: {' '.join(update_cmd)}")
+            
+            update_result = subprocess.run(
+                update_cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            
+            if update_result.stdout:
+                for line in update_result.stdout.splitlines():
+                    if line.strip():
+                        logger.info(line)
+            
+            if update_result.returncode != 0:
+                logger.error(
+                    f"exiftool time update exited with code "
+                    f"{update_result.returncode}"
+                )
+                return False
         
         return True
     except Exception as ex:
@@ -438,7 +479,7 @@ def exiftool_command(
         sys.exit(1)
 
     except Exception as ex:
-        msg = "*** An unrecoverable error occured ***"
+        msg = "*** An unrecoverable error occurred ***"
         logger.error(msg)
         lf = logger.error if not ctx.obj["DEBUG"] else logger.exception
         err_msg = str(ex)
