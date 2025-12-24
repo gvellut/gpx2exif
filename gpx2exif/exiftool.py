@@ -184,8 +184,8 @@ def exiftool_command(
     delta,
     delta_tz,
     tz,
-    kml_output_path,
     is_clear,
+    kml_output_path,
     is_update_images,
     is_update_time,
     is_yes,
@@ -246,8 +246,8 @@ def exiftool_command(
                     raise UpdateConfirmationAbortedException()
 
         # Use a single ExifToolHelper instance for the whole program run
+        # auto_start=True (default) means exiftool will start on first command
         et = exiftool.ExifToolHelper()
-        et.run()
 
         img_files = _get_image_files(img_fileordirpath)
         if not img_files:
