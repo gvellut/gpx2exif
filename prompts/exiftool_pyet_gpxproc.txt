@@ -1,0 +1,6 @@
+- Only deal with the exiftool.py file, none of the other commands. ONLY exiftooll.py
+- Remove all use of subprocess : always use pyexiftool to run the exiftool commands. 
+- Use a single instance of the ExifToolHelper for the whole program run : It runs the command-line exiftool in batch mode
+- remove all internal gpx processing inside the exiftool.py file. Do not use process_gpx, conmpute_pos. If need be, remove the logs : let exiftool either outputs the logs (gpx track time) or remove them.
+- exiftool should be the one generating the KML. do not use process_kml. Deal with the cases update image and not.
+- only deal with the arguments / options and how to transform them for exiftool. exiftool must do all the work apart from that.

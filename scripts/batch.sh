@@ -1,12 +1,12 @@
 export PYTHONPATH=`pwd`/..
 
 top_photo_folder="/Volumes/CrucialX8/photos"
-folder="20251108_arve"
-gpx="/Users/guilhem/Library/CloudStorage/GoogleDrive-guilhem.vellut@gmail.com/My Drive/___gpx/20251108-083447.gpx"
+folder="20251223_sauvage_biolle"
+gpx="/Users/guilhem/Library/CloudStorage/GoogleDrive-guilhem.vellut@gmail.com/My Drive/___gpx/20251223-090133.gpx"
 
-d_tz95="-1h16m5s"
+d_tz95="-1h16m50s"
 d_rx100="16:18:56-17:15:03"
-d_xs20="-59m9s"
+d_xs20="-59m5s"
 
 f_tz95=1
 f_rx100=0
