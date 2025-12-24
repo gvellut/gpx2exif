@@ -4,6 +4,7 @@ import sys
 import click
 from colorama import Fore, Style
 
+from .exiftool import exiftool_command
 from .gpx2exif import gpx2exif
 from .gpx2flickr import gpx2flickr
 from .time_extractor import extract_time
@@ -58,6 +59,7 @@ def main(ctx, is_debug):
 main.add_command(gpx2exif)
 main.add_command(gpx2flickr)
 main.add_command(extract_time)
+main.add_command(exiftool_command)
 
 
 if __name__ == "__main__":
