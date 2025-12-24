@@ -1,8 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import logging
-import os
 from pathlib import Path
-import subprocess
 import sys
 
 import click
@@ -12,18 +10,12 @@ import pytz
 from .common import (
     UpdateConfirmationAbortedException,
     clear_option,
-    compute_pos,
     delta_option,
     delta_tz_option,
     format_timedelta,
     kml_option,
-    kml_thumbnail_size_option,
     print_delta,
     process_delta,
-    process_gpx,
-    process_kml,
-    process_tolerance,
-    tolerance_option,
     update_images_option,
     update_time_option,
     yes_option,
@@ -32,267 +24,123 @@ from .common import (
 logger = logging.getLogger(__package__)
 
 
-def image_src(x):
-    # issue on Windows if backslash left as is + GE needs a starting /
-    if os.name == "nt":
-        x = "/" + x.replace("\\", "/")
-    return f"file://{x}"
-
-
-image_name = os.path.basename
-
-
-def image_style(x):
-    """
-    Get image style based on orientation.
-    Uses exiftool to read orientation instead of piexif.
-    """
-    try:
-        with exiftool.ExifToolHelper() as et:
-            metadata = et.get_metadata([x])
-            if metadata and "EXIF:Orientation" in metadata[0]:
-                orientation = metadata[0]["EXIF:Orientation"]
-                if orientation == 3:
-                    angle = 180
-                    origin = "center"
-                    translate = ""
-                elif orientation == 6:
-                    angle = 90
-                    origin = "left bottom"
-                    translate = "translateY(-100%)"
-                elif orientation == 8:
-                    angle = -90
-                    origin = "top right"
-                    translate = "translateX(-100%)"
-                else:
-                    return ""
-
-                return (
-                    f"-webkit-transform: {translate} rotate({angle}deg); "
-                    f"-webkit-transform-origin: {origin};"
-                )
-    except Exception:
-        pass
-    return ""
-
-
-def read_original_photo_time(img_path, is_ignore_offset, tz_warning=True):
-    """
-    Read the original photo time using exiftool.
-    """
-    try:
-        with exiftool.ExifToolHelper() as et:
-            metadata = et.get_metadata([str(img_path)])
-            if not metadata or "EXIF:DateTimeOriginal" not in metadata[0]:
-                return None
-
-            dt_original_str = metadata[0]["EXIF:DateTimeOriginal"]
-            # ExifTool returns dates in the format "YYYY:MM:DD HH:MM:SS"
-            dt_format = "%Y:%m:%d %H:%M:%S"
-
-            if not is_ignore_offset and "EXIF:OffsetTimeOriginal" in metadata[0]:
-                offset_original = metadata[0]["EXIF:OffsetTimeOriginal"]
-                if tz_warning:
-                    logger.warning(f"Found offset in EXIF: {offset_original}")
-                # append the offset
-                dt_original_str += offset_original
-                dt_format += "%z"
-                dt_original = datetime.strptime(dt_original_str, dt_format)
-            else:
-                if tz_warning:
-                    if is_ignore_offset:
-                        logger.warning("Offset ignored in EXIF. Assume UTC (+00:00)")
-                    else:
-                        logger.warning("No offset in EXIF. Assume UTC (+00:00)")
-                dt_original = datetime.strptime(dt_original_str, dt_format)
-                # assume UTC
-                dt_original = dt_original.replace(tzinfo=timezone.utc)
-
-            return dt_original
-    except Exception as ex:
-        logger.error(f"Error reading time from {img_path}: {ex}")
-        return None
-
-
-def collect_image_positions(
-    img_fileordirpath,
-    gpx_segments,
-    delta,
-    tolerance,
-    is_ignore_offset,
-):
-    """
-    Collect positions for images to generate KML output.
-    """
-    positions = []
+def _get_image_files(img_fileordirpath):
+    """Get list of image files from a file or directory path."""
     if img_fileordirpath.is_file():
-        img_files = [img_fileordirpath]
+        return [str(img_fileordirpath)]
     elif img_fileordirpath.is_dir():
-        img_files = [
-            f for f in sorted(img_fileordirpath.iterdir())
+        # Get all non-hidden files in the directory
+        files = [
+            str(f.resolve())
+            for f in sorted(img_fileordirpath.iterdir())
             if f.is_file() and not f.name.startswith(".")
         ]
-    else:
-        return positions
-
-    tz_warning = True
-    for img_filepath in img_files:
-        try:
-            time_original = read_original_photo_time(
-                img_filepath, is_ignore_offset, tz_warning
-            )
-            # Only show timezone warning once for the first image
-            tz_warning = False
-            
-            if not time_original:
-                logger.warning(
-                    f"Cannot compute position for file {img_filepath.name} "
-                    "(No DateTimeOriginal tag found)"
-                )
-                continue
-
-            time_corrected = time_original + delta
-            pos = compute_pos(time_corrected, gpx_segments, tolerance)
-            
-            if not pos:
-                logger.warning(
-                    f"Cannot compute position for file {img_filepath.name} "
-                    f"({time_corrected} is outside GPX range + tolerance)"
-                )
-                continue
-
-            positions.append((pos, str(img_filepath.resolve())))
-            logger.debug(f"{os.path.basename(img_filepath)} => {pos[0]}, {pos[1]}")
-        except Exception as ex:
-            logger.error(f"File {img_filepath.name} error: {ex}")
-
-    return positions
+        return files
+    return []
 
 
-def synch_gps_exif_with_geotag(
-    gpx_filepath,
-    img_fileordirpath,
-    delta,
-    delta_tz,
-    is_ignore_offset,
-    is_update_time,
-):
-    """
-    Use exiftool's native -geotag option to synchronize GPS data from GPX to images.
-    This is the recommended way to use exiftool with GPX files.
-    """
-    # Build exiftool command
-    cmd = ["exiftool"]
-    
-    # Add the geotag option with the GPX file
-    cmd.extend(["-geotag", str(gpx_filepath)])
-    
-    # Handle time offset for geotag matching
-    # The -geosync option allows specifying time offset in seconds
+def _build_geotag_params(gpx_filepath, delta, is_clear):
+    """Build parameters for exiftool geotag command."""
+    params = ["-geotag", str(gpx_filepath)]
+
+    # Handle time offset for geotag matching using -geosync
     if delta != timedelta(0):
-        # Convert timedelta to seconds (rounded to avoid floating point issues)
         offset_seconds = round(delta.total_seconds())
-        # Use -geosync to shift the time for geotag matching
-        # Format: -geosync={offset_seconds}
-        cmd.extend([f"-geosync={offset_seconds}"])
-    
-    # Overwrite original files
-    cmd.append("-overwrite_original")
-    
-    # Add progress output
-    cmd.append("-progress")
-    
-    # Add target files/directory
-    if img_fileordirpath.is_file():
-        cmd.append(str(img_fileordirpath))
-    elif img_fileordirpath.is_dir():
-        cmd.append(str(img_fileordirpath))
-        # Add extension filter to only process image files
-        cmd.extend(["-ext", "jpg", "-ext", "jpeg", "-ext", "JPG", "-ext", "JPEG"])
-    
-    logger.info("Running exiftool with geotag support...")
-    logger.debug(f"Command: {' '.join(cmd)}")
-    
+        params.append(f"-geosync={offset_seconds}")
+
+    # If clear is set, use the geotime option to clear GPS if no match
+    if is_clear:
+        # Use API option to handle images outside track time range
+        params.append("-api")
+        params.append("GeoMaxIntSecs=0")
+
+    params.append("-overwrite_original")
+
+    return params
+
+
+def _build_time_shift_params(delta):
+    """Build parameters for exiftool time shift command."""
+    offset_seconds = round(delta.total_seconds())
+    hours = abs(offset_seconds) // 3600
+    minutes = (abs(offset_seconds) % 3600) // 60
+    seconds = abs(offset_seconds) % 60
+
+    sign = "+" if offset_seconds >= 0 else "-"
+    time_shift = f"{sign}0:0:0 {hours}:{minutes}:{seconds}"
+
+    return [f"-DateTimeOriginal+={time_shift}", "-overwrite_original"]
+
+
+def _generate_kml_with_exiftool(et, img_files, kml_output_path):
+    """
+    Generate KML file using exiftool to extract GPS coordinates.
+    """
+    if not img_files:
+        logger.error("No KML output (no files to process)!")
+        return
+
     try:
-        # Run exiftool
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False,
+        # Get GPS data from images
+        metadata = et.get_tags(
+            img_files,
+            tags=[
+                "FileName",
+                "Directory",
+                "GPSLatitude",
+                "GPSLongitude",
+            ],
         )
-        
-        # Log output
-        if result.stdout:
-            for line in result.stdout.splitlines():
-                if line.strip():
-                    logger.info(line)
-        
-        if result.stderr:
-            for line in result.stderr.splitlines():
-                if line.strip() and not line.startswith("======"):
-                    logger.warning(line)
-        
-        if result.returncode != 0:
-            logger.error(f"exiftool exited with code {result.returncode}")
-            return False
-        
-        # Handle update time option - update DateTimeOriginal if requested
-        if is_update_time and delta != timedelta(0):
-            logger.info("Updating DateTimeOriginal tags...")
-            update_cmd = ["exiftool"]
-            
-            # Calculate the time shift in time delta format: [+/-]YYYY:MM:DD HH:MM:SS
-            offset_seconds = round(delta.total_seconds())
-            hours = abs(offset_seconds) // 3600
-            minutes = (abs(offset_seconds) % 3600) // 60
-            seconds = abs(offset_seconds) % 60
-            
-            # Build time delta string in ExifTool's time shift format
-            sign = "+" if offset_seconds >= 0 else "-"
-            time_shift = f"{sign}0:0:0 {hours}:{minutes}:{seconds}"
-            
-            # Use ExifTool's time shift syntax with += operator
-            update_cmd.extend([
-                f"-DateTimeOriginal+={time_shift}",
-                "-overwrite_original"
-            ])
-            
-            # Add target files/directory
-            if img_fileordirpath.is_file():
-                update_cmd.append(str(img_fileordirpath))
-            elif img_fileordirpath.is_dir():
-                update_cmd.append(str(img_fileordirpath))
-                update_cmd.extend([
-                    "-ext", "jpg", "-ext", "jpeg",
-                    "-ext", "JPG", "-ext", "JPEG"
-                ])
-            
-            logger.debug(f"Update time command: {' '.join(update_cmd)}")
-            
-            update_result = subprocess.run(
-                update_cmd,
-                capture_output=True,
-                text=True,
-                check=False,
+
+        # Filter images that have GPS coordinates
+        geotagged = [
+            m
+            for m in metadata
+            if "EXIF:GPSLatitude" in m and "EXIF:GPSLongitude" in m
+        ]
+
+        if not geotagged:
+            logger.error("No KML output (no georeferenced photos)!")
+            return
+
+        # Build KML content
+        kml_lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<kml xmlns="http://www.opengis.net/kml/2.2">',
+            "<Document>",
+            "  <name>Photo Locations</name>",
+        ]
+
+        for m in geotagged:
+            filename = m.get("File:FileName", "Unknown")
+            directory = m.get("File:Directory", "")
+            lat = m.get("EXIF:GPSLatitude", 0)
+            lon = m.get("EXIF:GPSLongitude", 0)
+
+            filepath = f"{directory}/{filename}" if directory else filename
+
+            kml_lines.extend(
+                [
+                    "  <Placemark>",
+                    f"    <name>{filename}</name>",
+                    f"    <description><![CDATA[{filepath}]]></description>",
+                    "    <Point>",
+                    f"      <coordinates>{lon},{lat},0</coordinates>",
+                    "    </Point>",
+                    "  </Placemark>",
+                ]
             )
-            
-            if update_result.stdout:
-                for line in update_result.stdout.splitlines():
-                    if line.strip():
-                        logger.info(line)
-            
-            if update_result.returncode != 0:
-                logger.error(
-                    f"exiftool time update exited with code "
-                    f"{update_result.returncode}"
-                )
-                return False
-        
-        return True
+
+        kml_lines.extend(["</Document>", "</kml>"])
+
+        # Write KML file
+        with open(kml_output_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(kml_lines))
+
+        logger.info(f"KML file written to: {kml_output_path}")
+
     except Exception as ex:
-        logger.error(f"Error running exiftool: {ex}")
-        return False
+        logger.error(f"Error generating KML: {ex}")
 
 
 @click.command(
@@ -323,25 +171,11 @@ def synch_gps_exif_with_geotag(
     ),
     required=False,
 )
-@tolerance_option
-@click.option(
-    "-o",
-    "--ignore-offset",
-    "is_ignore_offset",
-    is_flag=True,
-    help=(
-        "Flag to indicate that the OffsetTimeOriginal should not be used (time of "
-        "images is assumed UTC). Use --delta to compensate for both timezone and "
-        "drift."
-    ),
-    required=False,
-)
 @clear_option
 @kml_option
 @update_images_option
 @update_time_option
 @yes_option
-@kml_thumbnail_size_option
 @click.pass_context
 def exiftool_command(
     ctx,
@@ -350,74 +184,56 @@ def exiftool_command(
     delta,
     delta_tz,
     tz,
-    tolerance,
-    is_ignore_offset,
-    is_clear,
     kml_output_path,
-    kml_thumbnail_size,
+    is_clear,
     is_update_images,
     is_update_time,
     is_yes,
 ):
     """
     Add GPS EXIF tags to local images based on a GPX file using exiftool.
-    This is an alternative to the 'image' subcommand that uses the exiftool binary
-    with its native -geotag support.
+    This command uses the exiftool binary with its native -geotag support.
+    All GPX processing and position interpolation is handled by exiftool.
     """
+    et = None
     try:
         if delta_tz and tz:
             raise click.UsageError("Cannot use --delta-tz and --tz at the same time")
-
-        if delta_tz:
-            is_ignore_offset = True
 
         logger.info("Parsing time shift...")
         delta = process_delta(delta)
         print_delta(delta, "Time")
 
-        gpx_segments = process_gpx(gpx_filepath)
-
+        # Handle timezone offset
         if tz:
-            is_ignore_offset = True
             if tz == "auto":
-                tz = datetime.now().astimezone().tzinfo
+                # Use local timezone
+                local_tz = datetime.now().astimezone().tzinfo
+                delta_tz_offset = -local_tz.utcoffset(datetime.now())
             else:
                 try:
-                    tz = pytz.timezone(tz)
+                    tz_obj = pytz.timezone(tz)
                 except pytz.UnknownTimeZoneError as ex:
                     raise click.UsageError(f"Unknown timezone: {tz}") from ex
-
-            gpx_start_time = gpx_segments[0].iloc[0].name.replace(tzinfo=None)
-            gpx_end_time = gpx_segments[-1].iloc[-1].name.replace(tzinfo=None)
-
-            start_offset = tz.utcoffset(gpx_start_time)
-            end_offset = tz.utcoffset(gpx_end_time)
-
-            if start_offset != end_offset:
-                logger.warning(
-                    "Timezone offset is different between the start and end of the "
-                    f"GPX track: {start_offset} vs {end_offset}. Using the start "
-                    "offset."
-                )
-
-            delta_tz = -start_offset
+                # Use current time to get offset (exiftool handles DST itself)
+                delta_tz_offset = -tz_obj.utcoffset(datetime.now().replace(tzinfo=None))
+            logger.info(f"Timezone offset: {delta_tz_offset}")
         elif delta_tz:
-            delta_tz = process_delta([delta_tz])
+            delta_tz_offset = process_delta([delta_tz])
         else:
-            delta_tz = None
+            delta_tz_offset = None
 
-        if delta_tz:
-            print_delta(delta_tz, "TZ time")
-            delta_total = delta + delta_tz
+        if delta_tz_offset:
+            print_delta(delta_tz_offset, "TZ time")
+            delta_total = delta + delta_tz_offset
             print_delta(delta_total, "Total time")
         else:
             delta_total = delta
 
-        tolerance = process_tolerance(tolerance)
         img_fileordirpath = Path(img_fileordirpath)
 
         logger.info("Synching EXIF GPS to GPX using exiftool...")
-        
+
         if not is_update_images:
             logger.warning("The images will not be updated!")
         else:
@@ -429,38 +245,55 @@ def exiftool_command(
                 if not click.confirm("The images will be updated. Confirm?"):
                     raise UpdateConfirmationAbortedException()
 
+        # Use a single ExifToolHelper instance for the whole program run
+        et = exiftool.ExifToolHelper()
+        et.run()
+
+        img_files = _get_image_files(img_fileordirpath)
+        if not img_files:
+            logger.error("No image files found!")
+            return
+
+        logger.debug(f"Processing {len(img_files)} file(s)")
+
         # Use exiftool's native geotag support to update images
         if is_update_images:
-            success = synch_gps_exif_with_geotag(
-                gpx_filepath,
-                img_fileordirpath,
-                delta_total,
-                delta_tz,
-                is_ignore_offset,
-                is_update_time,
-            )
-            if not success:
-                logger.error("Failed to update images with exiftool")
+            logger.info("Running exiftool with geotag support...")
 
-        # Collect positions for KML output
-        positions = []
+            # Build geotag parameters
+            geotag_params = _build_geotag_params(gpx_filepath, delta_total, is_clear)
+            logger.debug(f"Geotag params: {geotag_params}")
+
+            # Execute geotag command using pyexiftool
+            try:
+                result = et.execute(*geotag_params, *img_files)
+                if result:
+                    # Log the output from exiftool
+                    for line in result.splitlines():
+                        if line.strip():
+                            logger.info(line)
+            except Exception as ex:
+                logger.error(f"Error during geotagging: {ex}")
+
+            # Handle update time option - update DateTimeOriginal if requested
+            if is_update_time and delta != timedelta(0):
+                logger.info("Updating DateTimeOriginal tags...")
+                time_params = _build_time_shift_params(delta)
+                logger.debug(f"Time shift params: {time_params}")
+
+                try:
+                    result = et.execute(*time_params, *img_files)
+                    if result:
+                        for line in result.splitlines():
+                            if line.strip():
+                                logger.info(line)
+                except Exception as ex:
+                    logger.error(f"Error updating time: {ex}")
+
+        # Generate KML output if requested
         if kml_output_path:
-            positions = collect_image_positions(
-                img_fileordirpath,
-                gpx_segments,
-                delta_total,
-                tolerance,
-                is_ignore_offset,
-            )
-
-        process_kml(
-            positions,
-            kml_output_path,
-            kml_thumbnail_size,
-            image_src,
-            image_name,
-            image_style,
-        )
+            logger.info("Writing KML...")
+            _generate_kml_with_exiftool(et, img_files, kml_output_path)
 
     except UpdateConfirmationAbortedException:
         logger.error("Update aborted by user!")
@@ -486,4 +319,12 @@ def exiftool_command(
         if err_msg:
             lf(err_msg)
         sys.exit(1)
+
+    finally:
+        # Close the ExifToolHelper instance at the end
+        if et is not None:
+            try:
+                et.terminate()
+            except Exception:
+                pass
 
