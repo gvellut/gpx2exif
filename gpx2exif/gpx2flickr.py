@@ -15,6 +15,7 @@ from .common import (
     compute_pos,
     delta_option,
     delta_tz_option,
+    format_timedelta,
     kml_option,
     kml_thumbnail_size_option,
     print_delta,
@@ -24,6 +25,7 @@ from .common import (
     process_tolerance,
     tolerance_option,
     update_images_option,
+    update_time_option,
 )
 from .flickr_api_auth import create_flickr_api
 
@@ -97,17 +99,42 @@ def set_flickr_location(flickr, image, pos):
     flickr.photos.geo.setLocation(photo_id=image.id, lat=pos[0], lon=pos[1])
 
 
+def format_flickr_date_taken(dt):
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def set_flickr_date_taken(flickr, image, dt):
+    flickr.photos.setDates(
+        photo_id=image.id,
+        date_taken=format_flickr_date_taken(dt),
+        date_taken_granularity=0,
+    )
+
+
 def process_image(
-    flickr, image, user, gpx_segments, delta, tolerance, is_clear, is_update_images
+    flickr,
+    image,
+    user,
+    gpx_segments,
+    delta_total,
+    delta_time,
+    tolerance,
+    is_clear,
+    is_update_images,
+    is_update_time,
 ):
     time_original = dateutil.parser.isoparse(image.datetaken)
     time_original = time_original.replace(tzinfo=timezone.utc)
-    time_corrected = time_original + delta
+    time_corrected = time_original + delta_total
+    time_updated = time_original + delta_time
 
     image_url = create_photopage_url(image, user)
 
     logger.debug(f"Processing {image_url}...")
     logger.debug(f"Time corrected {time_corrected.isoformat()}")
+
+    if is_update_images and is_update_time:
+        set_flickr_date_taken(flickr, image, time_updated)
 
     pos = compute_pos(time_corrected, gpx_segments, tolerance)
     if not pos:
@@ -133,10 +160,12 @@ def synch_gps_flickr(
     user,
     album,
     gpx_segments,
-    delta,
+    delta_total,
+    delta_time,
     tolerance,
     is_clear,
     is_update_images,
+    is_update_time,
     is_debug,
 ):
     images = get_images_in_album(flickr, album)
@@ -151,10 +180,12 @@ def synch_gps_flickr(
                 image,
                 user,
                 gpx_segments,
-                delta,
+                delta_total,
+                delta_time,
                 tolerance,
                 is_clear,
                 is_update_images,
+                is_update_time,
             )
             if pos:
                 positions.append((pos, image))
@@ -193,6 +224,7 @@ CONFIG_FILE_HELP = (
 @clear_option
 @kml_option
 @update_images_option
+@update_time_option
 @kml_thumbnail_size_option
 @click.option(
     "--api_key",
@@ -227,22 +259,23 @@ def gpx2flickr(
     kml_output_path,
     kml_thumbnail_size,
     is_update_images,
+    is_update_time,
     api_key,
     api_secret,
 ):
     try:
         logger.info("Parsing time shift...")
         delta = process_delta(delta)
+        print_delta(delta, "Time")
+
         if delta_tz:
             delta_tz = process_delta([delta_tz])
             delta_total = delta + delta_tz
+            print_delta(delta_tz, "TZ time")
+            print_delta(delta_total, "Total time")
         else:
             delta_tz = None
             delta_total = delta
-
-        # tz delta no different from delta for flickr (update time not supported)
-        # so do not print intermediate time deltas like for images
-        print_delta(delta, "Time")
 
         tolerance = process_tolerance(tolerance)
         gpx_segments = process_gpx(gpx_filepath)
@@ -256,9 +289,12 @@ def gpx2flickr(
 
         user = Addict(flickr.urls.lookupUser(url=flickr_album.url)).user
 
-        logger.info("Synching Flickr Geo tags to GPX...")
+        logger.info("Synching Flickr images to GPX...")
         if not is_update_images:
-            logger.warning("The images will not be updated with the positions!")
+            logger.warning("The Flickr images will not be updated!")
+        elif is_update_time:
+            fdt = format_timedelta(delta)
+            logger.warning(f"The times in the Flickr images will be shifted: {fdt}!")
 
         positions = synch_gps_flickr(
             flickr,
@@ -266,9 +302,11 @@ def gpx2flickr(
             flickr_album,
             gpx_segments,
             delta_total,
+            delta,
             tolerance,
             is_clear,
             is_update_images,
+            is_update_time,
             ctx.obj["DEBUG"],
         )
 

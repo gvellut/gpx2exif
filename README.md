@@ -58,6 +58,8 @@ The time used for a Flickr image is the __Date Taken__ attribute from the Flickr
 
 There is no timezone for the __Date Taken__ attribute on Flickr and therefore the time is asssumed to be UTC (just like when the offset is missing from the EXIF tags for images on disk). Use the `--delta` or `-delta-tz` option to compensate (see above).
 
+When `gpx2exif flickr --update-time` is used, the Flickr __Date Taken__ value is shifted only with `--delta`, not with `--delta-tz`, so the stored value stays as local/photo-owner time without a timezone conversion. The `--delta-tz` value is still used to match the photo time with the GPX track in UTC.
+
 ## Format for time shift and tolerance
 
 The time shift (`--delta` switch) and tolerance (`--tolerance` switch) are time intervals. They can be expressed using a string in a simple format. For example:
